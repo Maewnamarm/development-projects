@@ -1,7 +1,10 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Image from 'next/image';
 
 const LoginPage: React.FC = () => {
+  const [isRegistering, setIsRegistering] = useState(false);
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-gray-100">
       <div className="absolute inset-0">
@@ -56,6 +59,15 @@ const LoginPage: React.FC = () => {
             >
               ล็อกอิน
             </button>
+            {/* <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsRegistering(true)}
+                  className="text-blue-600 hover:underline focus:outline-none"
+                >
+                  ลงทะเบียน
+                </button>
+              </div> */}
           </form>
         </div>
       </div>
