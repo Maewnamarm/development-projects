@@ -213,7 +213,9 @@ export default function StatisticsDashboard() {
                     <XAxis dataKey="name" interval={0} angle={-45} textAnchor="end" height={80} />
                     <YAxis label={{ value: 'จำนวน', angle: -90, position: 'insideLeft' }} />
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{
+                        transform: 'translateY(10px)', // ขยับลง 10px
+                      }} />
                     <Bar dataKey="count" fill="#8884d8" name="จำนวนโครงการ" />
                   </BarChart>
                 </ResponsiveContainer>
