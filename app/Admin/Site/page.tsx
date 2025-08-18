@@ -285,7 +285,7 @@ export default function HomeDashboard() {
                     <span className="text-gray-700 font-medium">{project.status}</span>
                     <div className="relative">
                       <button
-                        className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 flex items-center"
+                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center"
                         onClick={() => handleToggleStatusDropdown(project.id)}
                       >
                         <Eye size={16} className="mr-1" />

@@ -30,20 +30,20 @@ const LoginPage: React.FC = () => {
           {!isRegistering ? (
             <form>
               <div className="mb-4">
-                <label htmlFor="username" className="sr-only block text-sm font-medium text-gray-700">
-                  ชื่อผู้ใช้งาน
+                <label htmlFor="username" className="sr-only block text-sm font-medium text-gray-800 mb-1">
+                  อีเมล์
                 </label>
                 <input
                   type="text"
                   id="username"
                   name="username"
-                  placeholder="ชื่อผู้ใช้งาน"
-                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  placeholder="อีเมล์"
+                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-black"
                 />
               </div>
 
               <div className="mb-6">
-                <label htmlFor="password" className="sr-only block text-sm font-medium text-gray-700">
+                <label htmlFor="password" className="sr-only block text-sm font-medium text-gray-800 mb-1">
                   รหัสผ่าน
                 </label>
                 <input
@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
                   id="password"
                   name="password"
                   placeholder="รหัสผ่าน"
-                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-black"
                 />
               </div>
 
@@ -83,7 +83,7 @@ const LoginPage: React.FC = () => {
                   id="email"
                   name="email"
                   placeholder="อีเมล์"
-                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-black"
                 />
               </div>
 
@@ -96,7 +96,7 @@ const LoginPage: React.FC = () => {
                   id="register-password"
                   name="register-password"
                   placeholder="รหัสผ่าน"
-                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-black"
                 />
               </div>
 
@@ -109,7 +109,7 @@ const LoginPage: React.FC = () => {
                   id="confirm-password"
                   name="confirm-password"
                   placeholder="ยืนยันรหัสผ่าน"
-                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="mt-1 block w-full rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-black"
                 />
               </div>
 
@@ -119,7 +119,7 @@ const LoginPage: React.FC = () => {
                   id="otp"
                   name="otp"
                   placeholder="กรอก OTP"
-                  className="flex-grow rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                  className="flex-grow rounded-2xl border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50 text-black"
                 />
                 <button
                   type="button"
