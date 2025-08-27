@@ -198,7 +198,7 @@ export default function DashboardLayout() {
           {/* Section 1: Project Information Editor */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-800">แก้ไขข้อมูลโครงการ</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">เพิ่มข้อมูลโครงการ</h2>
               <div className="flex space-x-2">
                 <button className="bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-600 flex items-center">
                   <Save size={18} className="mr-2" />
@@ -290,8 +290,9 @@ export default function DashboardLayout() {
                 </div>
                 <div className="flex items-center">
                   <label htmlFor="category" className="w-40 text-gray-700">หมวดหมู่</label>
-                  <select id="category" className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-400">
+                  <select id="category" className="flex-1 p-2 border border-gray-300 text-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option>เลือกหมวดหมู่</option>
+                    <option>ไม่เลือก</option>
                   </select>
                 </div>
                 <div className="flex items-center">
@@ -337,7 +338,7 @@ export default function DashboardLayout() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <input
                           type="text"
-                          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-400"
+                          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           defaultValue={activity.description}
                         />
                       </td>
@@ -423,68 +424,11 @@ export default function DashboardLayout() {
             {/* Sub-section: Document List - Table format */}
             <div className="mt-6">
               <h3 className="text-xl font-medium text-gray-700 mb-2">เอกสารทั้งหมด</h3>
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        สาธารณะ
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ชื่อ
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        เอกสาร
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ลบ
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {documents.map((doc) => (
-                      <tr key={doc.id}>
-                        <td className="px-4 py-4 whitespace-nowrap text-center">
-                          <input
-                            type="checkbox"
-                            checked={doc.isPublic}
-                            onChange={() => handlePublicSelect(doc.id)}
-                            className="form-checkbox h-5 w-5 text-blue-600 rounded-md"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {doc.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {doc.file !== 'Upload file' ? (
-                            <a href="#" className="text-blue-500 hover:underline">{doc.file}</a>
-                          ) : (
-                            <label htmlFor={`file-upload-${doc.id}`} className="cursor-pointer">
-                              <span className="text-gray-500 hover:text-blue-500 flex items-center">
-                                Upload file
-                                <input
-                                  id={`file-upload-${doc.id}`}
-                                  type="file"
-                                  className="hidden"
-                                  onChange={(e) => handleFileUpload(e, doc.id)}
-                                />
-                              </span>
-                            </label>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => handleDeleteDocument(doc.id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-100"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-4">
+              <div>
+                <h3 className="text-xl font-medium text-gray-700 mb-1">-----------</h3>
               </div>
+            </div>
             </div>
           </div>
           {/* ส่วนอื่น ๆ ของโค้ดที่เหลือยังคงเดิม */}
@@ -492,44 +436,7 @@ export default function DashboardLayout() {
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">ข้อมูลโครงการจากเอกสาร</h2>
             <div className="space-y-4">
               <div>
-                <h3 className="text-xl font-medium text-gray-700 mb-1">ชื่อเอกสาร: <span className="font-normal">ข้อมูลโครงการฉบับเต็ม</span></h3>
-                <h4 className="font-semibold text-gray-800">เป้าหมายของโครงการ</h4>
-                <ul className="list-decimal list-inside text-gray-700 pl-4">
-                  <li>เพื่อซ่อมแซมถนนที่ชำรุดเสียหายในพื้นที่ (ระบุชื่อพื้นที่ให้สามารถใช้งานได้อย่างมีประสิทธิภาพ</li>
-                  <li>เพื่ออำนวยความสะดวกและความปลอดภัยแก่ประชาชนในการสัญจร</li>
-                  <li>เพื่อเพิ่มคุณภาพโครงสร้างพื้นฐานในพื้นที่ ส่งเสริมการคมนาคมและเศรษฐกิจชุมชน</li>
-                  <li>เพื่อลดอุบัติเหตุที่เกิดจากพื้นผิวถนนที่ไม่เรียบหรือมีหลุมบ่อ</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-800 mt-4">งบประมาณและแหล่งที่มาของงบประมาณ</h4>
-                <ul className="list-disc list-inside text-gray-700 pl-4">
-                  <li>งบประมาณในการดำเนินโครงการจำนวน 350,000 (สามแสนห้าหมื่นบาทถ้วน)</li>
-                  <li>โดยใช้จ่ายในรายการหลัก รายการรายละเอียดจำนวนเงิน</li>
-                  <li>ค่าปรับพื้นผิวและเตรียมพื้นผิวงานถนนเดิม 30,000</li>
-                  <li>ค่าวัสดุยางมะตอยยางมะตอยพร้อมขนส่ง 200,000</li>
-                  <li>ค่าแรงงานและเครื่องจักรแรงงานพร้อมรถบดอัด 100,000</li>
-                  <li>ค่าดำเนินการอื่น ๆ ค่าใช้จ่ายเบ็ดเตล็ด 20,000</li>
-                  <li>รวมทั้งสิ้น 350,000</li>
-                </ul>
-              </div>
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-xl font-medium text-gray-700 mb-1">ชื่อเอกสาร: <span className="font-normal">หนังสือเสนอ</span></h3>
-                <h4 className="font-semibold text-gray-800">ขอบเขต</h4>
-                <ul className="list-disc list-inside text-gray-700 pl-4">
-                  <li>พื้นที่ดำเนินโครงการ</li>
-                  <ul className="list-disc list-inside text-gray-700 pl-8">
-                    <li>ถนนในเขต หมู่ที่ 3 ตำบลทุ่งใหญ่ อำเภอเมือง จังหวัดนครราชสีมา</li>
-                    <li>ความยาวถนนที่ซ่อมแซมประมาณ 500 เมตร ความกว้างเฉลี่ย 5 เมตร</li>
-                  </ul>
-                  <li>ลักษณะของงานซ่อมแซม</li>
-                  <ul className="list-disc list-inside text-gray-700 pl-8">
-                    <li>การปรับระดับพื้นถนนเดิมและทำความสะอาดผิวหน้าถนน</li>
-                    <li>การลาดยางมะตอยแบบร้อน หนาเฉลี่ยประมาณ 5 เซนติเมตร</li>
-                    <li>อุดรอยแตก รอยแยก และหลุมบ่อที่เกิดจากการใช้งาน</li>
-                    <li>ติดตั้งแผงเสริมความแข็งแรงบริเวณขอบถนน</li>
-                  </ul>
-                </ul>
+                <h3 className="text-xl font-medium text-gray-700 mb-1">-----------</h3>
               </div>
             </div>
           </div>

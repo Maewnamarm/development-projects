@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Home, Search, ChevronDown } from 'lucide-react';
+import { Home, Search, ChevronDown, FileText, Download } from 'lucide-react';
 
 export default function DetailPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
@@ -43,17 +43,20 @@ export default function DetailPage() {
     return statusOptions[status]?.dot || '';
   };
 
+  // The dummy URL for a placeholder PDF document. This should be replaced with an actual file URL from Supabase storage.
+  const dummyFileUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+
   const documents = [
-    { name: 'ข้อมูลโครงการฉบับเต็ม', file: 'เอกสาร.pdf' },
-    { name: 'หนังสือเสนอ', file: 'เอกสาร.pdf' },
-    { name: 'การจัดซื้อจัดจ้าง', file: 'เอกสาร.pdf' },
-    { name: 'วิเคราะห์', file: 'เอกสาร.pdf' },
-    { name: 'หนังสือสัญญาจ้าง', file: 'เอกสาร.pdf' },
-    { name: 'เอกสารส่งมอบ', file: 'เอกสาร.pdf' },
-    { name: 'แผนการใช้จ่ายงบประมาณ', file: 'เอกสาร.pdf' },
-    { name: 'ไฟล์ยืนยันงบประมาณ', file: 'เอกสาร.pdf' },
-    { name: 'เอกสารอนุมัติงบประมาณ', file: 'เอกสาร.pdf' },
-    { name: 'เอกสารสำเร็จโครงการ', file: 'เอกสาร.pdf' },
+    { name: 'ข้อมูลโครงการฉบับเต็ม', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'หนังสือเสนอ', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'การจัดซื้อจัดจ้าง', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'วิเคราะห์', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'หนังสือสัญญาจ้าง', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'เอกสารส่งมอบ', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'แผนการใช้จ่ายงบประมาณ', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'ไฟล์ยืนยันงบประมาณ', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'เอกสารอนุมัติงบประมาณ', file: 'เอกสาร.pdf', url: dummyFileUrl },
+    { name: 'เอกสารสำเร็จโครงการ', file: 'เอกสาร.pdf', url: dummyFileUrl },
   ];
 
   const activities = [
@@ -250,17 +253,48 @@ export default function DetailPage() {
             </div>
           </div>
 
-          {/* Section 3: Documents */}
+          {/* Section 3: Documents (Updated to a table format with clickable links) */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">เอกสาร</h2>
-            <ul className="space-y-2">
-              {documents.map((doc, index) => (
-                <li key={index} className="flex items-center">
-                  <span className="text-gray-700">{doc.name}</span>
-                  <a href="#" className="ml-auto text-blue-500 hover:underline">{doc.file}</a>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ชื่อเอกสาร
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ไฟล์เอกสาร
+                    </th>
+                    <th scope="col" className="relative px-6 py-3">
+                      <span className="sr-only">Download</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {documents.map((doc, index) => (
+                    <tr key={index}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <div className="flex items-center">
+                          <FileText className="text-gray-400 mr-2" size={16} />
+                          {doc.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline">
+                        <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                          {doc.file}
+                        </a>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href={doc.url} download className="text-blue-600 hover:text-blue-900">
+                          <Download size={18} />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Section 4: Project Data from Documents (Empty) */}
