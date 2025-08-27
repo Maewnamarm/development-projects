@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, ChevronDown, Home, Plus, Save, X, Upload, Trash2 } from 'lucide-react'; // เพิ่ม Trash2 icon
+import { Search, ChevronDown, Home, Plus, Save, X, Upload } from 'lucide-react';
 
 export default function DashboardLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
@@ -33,16 +33,16 @@ export default function DashboardLayout() {
 
   const [newDocument, setNewDocument] = useState({ name: '', file: null, data: '' });
   const [documents, setDocuments] = useState([
-    { id: 1, name: 'ข้อมูลโครงการฉบับเต็ม', file: 'เอกสาร.pdf', isSelected: true, isPublic: true },
-    { id: 2, name: 'หนังสือเสนอ', file: 'เอกสาร.pdf', isSelected: false, isPublic: false },
-    { id: 3, name: 'การจัดซื้อจัดจ้าง', file: 'เอกสาร.pdf', isSelected: false, isPublic: true },
-    { id: 4, name: 'วิเคราะห์', file: 'เอกสาร.pdf', isSelected: false, isPublic: true },
-    { id: 5, name: 'หนังสือสัญญาจ้าง', file: 'Upload file', isSelected: false, isPublic: false },
-    { id: 6, name: 'เอกสารส่งมอบ', file: 'Upload file', isSelected: false, isPublic: false },
-    { id: 7, name: 'แผนการใช้จ่ายงบประมาณ', file: 'เอกสาร.pdf', isSelected: true, isPublic: true },
-    { id: 8, name: 'ไฟล์ยืนยันงบประมาณ', file: 'Upload file', isSelected: false, isPublic: false },
-    { id: 9, name: 'เอกสารอนุมัติงบประมาณ', file: 'Upload file', isSelected: false, isPublic: false },
-    { id: 10, name: 'เอกสารสำเร็จโครงการ', file: 'Upload file', isSelected: false, isPublic: false },
+    { id: 1, name: 'ข้อมูลโครงการฉบับเต็ม', file: 'เอกสาร.pdf', isSelected: true },
+    { id: 2, name: 'หนังสือเสนอ', file: 'เอกสาร.pdf', isSelected: false },
+    { id: 3, name: 'การจัดซื้อจัดจ้าง', file: 'เอกสาร.pdf', isSelected: false },
+    { id: 4, name: 'วิเคราะห์', file: 'เอกสาร.pdf', isSelected: false },
+    { id: 5, name: 'หนังสือสัญญาจ้าง', file: 'เอกสาร.pdf', isSelected: false },
+    { id: 6, name: 'เอกสารส่งมอบ', file: 'เอกสาร.pdf', isSelected: false },
+    { id: 7, name: 'แผนการใช้จ่ายงบประมาณ', file: 'เอกสาร.pdf', isSelected: true },
+    { id: 8, name: 'ไฟล์ยืนยันงบประมาณ', file: 'เอกสาร.pdf', isSelected: false },
+    { id: 9, name: 'เอกสารอนุมัติงบประมาณ', file: 'เอกสาร.pdf', isSelected: false },
+    { id: 10, name: 'เอกสารสำเร็จโครงการ', file: 'เอกสาร.pdf', isSelected: false },
   ]);
 
   const handleDocumentSelect = (id) => {
@@ -51,35 +51,14 @@ export default function DashboardLayout() {
     ));
   };
 
-  // เพิ่มฟังก์ชันสำหรับจัดการสถานะ Public
-  const handlePublicSelect = (id) => {
-    setDocuments(documents.map(doc =>
-      doc.id === id ? { ...doc, isPublic: !doc.isPublic } : doc
-    ));
-  };
-  
-  // เพิ่มฟังก์ชันสำหรับลบเอกสาร
-  const handleDeleteDocument = (id) => {
-    setDocuments(documents.filter(doc => doc.id !== id));
-  };
-
-  const handleFileUpload = (e, id) => {
+  const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    if (id) {
-      // สำหรับการอัปโหลดไฟล์ในตารางที่มีอยู่
-      setDocuments(documents.map(doc =>
-        doc.id === id ? { ...doc, file: file.name } : doc
-      ));
-    } else {
-      // สำหรับการอัปโหลดไฟล์ใหม่ในฟอร์มเพิ่มเอกสาร
-      setNewDocument({ ...newDocument, file: file });
-    }
+    setNewDocument({ ...newDocument, file: file });
   };
 
   const addDocument = () => {
     if (newDocument.name && newDocument.file) {
-      const newId = documents.length > 0 ? documents[documents.length - 1].id + 1 : 1;
-      setDocuments([...documents, { id: newId, name: newDocument.name, file: newDocument.file.name, isSelected: false, isPublic: false }]);
+      setDocuments([...documents, { id: documents.length + 1, name: newDocument.name, file: newDocument.file.name, isSelected: false }]);
       setNewDocument({ name: '', file: null, data: '' });
       console.log("Document added:", newDocument);
     }
@@ -341,7 +320,7 @@ export default function DashboardLayout() {
                           defaultValue={activity.description}
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap  text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap  text-sm text-gray-900">
                         <div className="flex space-x-2">
                           <input type="text" className="w-[100px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" placeholder="เริ่มต้น" />
                           <input type="text" className="w-[100px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" placeholder="สิ้นสุด" />
@@ -420,74 +399,27 @@ export default function DashboardLayout() {
               </div>
             </div>
 
-            {/* Sub-section: Document List - Table format */}
+            {/* Sub-section: Document List */}
             <div className="mt-6">
-              <h3 className="text-xl font-medium text-gray-700 mb-2">เอกสารทั้งหมด</h3>
-              <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        สาธารณะ
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ชื่อ
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        เอกสาร
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ลบ
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {documents.map((doc) => (
-                      <tr key={doc.id}>
-                        <td className="px-4 py-4 whitespace-nowrap text-center">
-                          <input
-                            type="checkbox"
-                            checked={doc.isPublic}
-                            onChange={() => handlePublicSelect(doc.id)}
-                            className="form-checkbox h-5 w-5 text-blue-600 rounded-md"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {doc.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {doc.file !== 'Upload file' ? (
-                            <a href="#" className="text-blue-500 hover:underline">{doc.file}</a>
-                          ) : (
-                            <label htmlFor={`file-upload-${doc.id}`} className="cursor-pointer">
-                              <span className="text-gray-500 hover:text-blue-500 flex items-center">
-                                Upload file
-                                <input
-                                  id={`file-upload-${doc.id}`}
-                                  type="file"
-                                  className="hidden"
-                                  onChange={(e) => handleFileUpload(e, doc.id)}
-                                />
-                              </span>
-                            </label>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => handleDeleteDocument(doc.id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-100"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <h3 className="text-xl font-medium text-gray-700 mb-2">เอกสาร</h3>
+              <ul className="space-y-2">
+                {documents.map((doc) => (
+                  <li key={doc.id} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={doc.isSelected}
+                      onChange={() => handleDocumentSelect(doc.id)}
+                      className="form-checkbox h-5 w-5 text-blue-600 rounded-md"
+                    />
+                    <span className="ml-3 text-gray-700">{doc.name}</span>
+                    <a href="#" className="ml-auto text-blue-500 hover:underline">{doc.file}</a>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-          {/* ส่วนอื่น ๆ ของโค้ดที่เหลือยังคงเดิม */}
+
+          {/* Section 4: Project Data from Documents */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">ข้อมูลโครงการจากเอกสาร</h2>
             <div className="space-y-4">
