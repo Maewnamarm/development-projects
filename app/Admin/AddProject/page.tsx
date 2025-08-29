@@ -198,7 +198,7 @@ export default function DashboardLayout() {
           {/* Section 1: Project Information Editor */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-800">เพิ่มข้อมูลโครงการ</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">เพิ่มโครงการ</h2>
               <div className="flex space-x-2">
                 <button className="bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-600 flex items-center">
                   <Save size={18} className="mr-2" />

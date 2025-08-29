@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, ChevronDown, Home, XCircle, MessageSquare } from 'lucide-react';
+import { Search, ChevronDown, Home, XCircle, MessageSquare, FileText } from 'lucide-react';
 
 interface Project {
   id: number;
@@ -17,6 +17,7 @@ interface Project {
   estimatedBudget?: string;
   images?: string[];
   comments?: { user: string; text: string; date: string }[];
+  documents?: { name: string; url: string }[];
 }
 
 const initialProjects: Project[] = [
@@ -26,7 +27,7 @@ const initialProjects: Project[] = [
     status: 'กำลังดำเนินการ',
     statusColor: 'bg-yellow-400',
     lastUpdated: 'แก้ไขล่าสุด 15/07/2568 เวลา 10:30 นาที',
-    description: 'โครงการนี้มีวัตถุประสงค์เพื่อปรับปรุงและซ่อมแซมพื้นผิวถนนที่ชำรุดเสียหายด้วยยางมะตอย เพื่อเพิ่มความปลอดภัยและความสะดวกสบายในการสัญจรของประชาชนในพื้นที่ รวมถึงลดปัญหาการจราจรติดขัดและอุบัติเหตุที่อาจเกิดขึ้นจากสภาพถนนที่ไม่ดี โครงการนี้จะดำเนินการในหลายจุดทั่วเทศบาลตำบลปะโค และคาดว่าจะแล้วเสร็จภายในระยะเวลาที่กำหนด',
+    description: 'โครงการนี้มีวัตถุประสงค์เพื่อปรับปรุงและซ่อมแซมพื้นผิวถนน...',
     responsiblePerson: 'นายสมชาย ใจดี',
     location: 'บ้านโพธิ์ หมู่ 88',
     startDate: '1 กรกฎาคม 2568',
@@ -35,11 +36,13 @@ const initialProjects: Project[] = [
     images: [
       'https://placehold.co/100x100/A0A0A0/FFFFFF?text=Image+1',
       'https://placehold.co/100x100/A0A0A0/FFFFFF?text=Image+2',
-      'https://placehold.co/100x100/A0A0A0/FFFFFF?text=Image+3',
-      'https://placehold.co/100x100/A0A0A0/FFFFFF?text=Image+4',
     ],
     comments: [
-      { user: 'นายประเมินผล', text: 'งานล่าช้ามากครับ ทำมา 2 ปีแล้ว ยังไม่คืบหน้าเลย ไม่เอาภาษีคนหนองคายไปกินนะคุณผู้รับเหมา', date: '17/07/2568' },
+      { user: 'นายประเมินผล', text: 'งานล่าช้า...', date: '17/07/2568' },
+    ],
+    documents: [
+      { name: 'สัญญาจ้าง.pdf', url: '/docs/contract.pdf' },
+      { name: 'แผนงาน.xlsx', url: '/docs/plan.xlsx' },
     ],
   },
   {
@@ -48,66 +51,18 @@ const initialProjects: Project[] = [
     status: 'เสร็จสิ้น',
     statusColor: 'bg-green-500',
     lastUpdated: 'แก้ไขล่าสุด 14/07/2568 เวลา 16:00 นาที',
-    description: 'โครงการขยายถนนเพื่อรองรับการจราจรที่เพิ่มขึ้นในพื้นที่บ้านโพธิ์ เพื่อให้การเดินทางสะดวกและรวดเร็วยิ่งขึ้น โดยมีการขยายผิวจราจรและปรับปรุงระบบระบายน้ำ คาดว่าจะช่วยลดปัญหาการจราจรติดขัดและส่งเสริมการพัฒนาเศรษฐกิจในท้องถิ่น',
+    description: 'โครงการขยายถนนเพื่อรองรับการจราจรที่เพิ่มขึ้น...',
     responsiblePerson: 'นางสาวสุดาพร มีสุข',
     location: 'บ้านโพธิ์',
     startDate: '1 มกราคม 2568',
     endDate: '30 มิถุนายน 2568',
     estimatedBudget: '850,000 บาท',
-    images: [
-      'https://placehold.co/100x100/B0B0B0/FFFFFF?text=Image+A',
-      'https://placehold.co/100x100/B0B0B0/FFFFFF?text=Image+B',
-    ],
     comments: [
-      { user: 'ผู้ดูแลระบบ', text: 'โครงการนี้เสร็จสมบูรณ์ตามแผนที่วางไว้', date: '01/07/2568' },
+      { user: 'ผู้ดูแลระบบ', text: 'โครงการนี้เสร็จสมบูรณ์ตามแผน', date: '01/07/2568' },
     ],
-  },
-  {
-    id: 3,
-    title: 'โครงการต่อเติมหลังคาบ้านท้าย',
-    status: 'ระงับ',
-    statusColor: 'bg-gray-400',
-    lastUpdated: 'แก้ไขล่าสุด 12/07/2568 เวลา 09:15 นาที',
-    description: 'โครงการต่อเติมหลังคาบ้านท้าย เพื่อเพิ่มพื้นที่ใช้สอยและปรับปรุงโครงสร้างให้แข็งแรงขึ้น แต่เนื่องจากปัญหาด้านงบประมาณ จึงถูกระงับชั่วคราว',
-    responsiblePerson: 'นายวิชัย ก่อสร้าง',
-    location: 'บ้านท้าย',
-    startDate: '10 มีนาคม 2568',
-    endDate: 'ยังไม่กำหนด',
-    estimatedBudget: '200,000 บาท',
-    images: [
-      'https://placehold.co/100x100/C0C0C0/FFFFFF?text=Image+X',
+    documents: [
+      { name: 'รายงานผล.pdf', url: '/docs/report.pdf' },
     ],
-    comments: [],
-  },
-  {
-    id: 4,
-    title: 'โครงการทำถนนสี่เลน',
-    status: 'ระงับ',
-    statusColor: 'bg-gray-400',
-    lastUpdated: 'แก้ไขล่าสุด 10/07/2568 เวลา 11:45 นาที',
-    description: 'โครงการขนาดใหญ่เพื่อพัฒนาโครงสร้างพื้นฐานด้านคมนาคมขนส่งในระยะยาว โดยมีแผนการขยายถนนเป็นสี่เลนเพื่อรองรับปริมาณรถที่เพิ่มขึ้นในอนาคต อย่างไรก็ตาม โครงการยังอยู่ในขั้นตอนการศึกษาความเป็นไปได้และถูกระงับชั่วคราว',
-    responsiblePerson: 'บริษัท ถนนดี จำกัด',
-    location: 'ทั่วเทศบาล',
-    startDate: '1 มกราคม 2567',
-    endDate: 'ยังไม่กำหนด',
-    estimatedBudget: '50,000,000 บาท',
-    images: [],
-    comments: [],
-  },
-  {
-    id: 5,
-    title: 'โครงการอ่างเก็บน้ำ',
-    status: 'ระงับ',
-    statusColor: 'bg-gray-400',
-    lastUpdated: 'แก้ไขล่าสุด 08/07/2568 เวลา 14:20 นาที',
-    description: 'โครงการก่อสร้างอ่างเก็บน้ำเพื่อการเกษตรและอุปโภคบริโภคของประชาชน เพื่อแก้ไขปัญหาการขาดแคลนน้ำในฤดูแล้งและส่งเสริมการเพาะปลูก แต่โครงการยังคงถูกระงับเนื่องจากปัญหาด้านสิ่งแวดล้อมและการจัดหาที่ดิน',
-    responsiblePerson: 'กรมชลประทาน',
-    location: 'พื้นที่ห่างไกล',
-    startDate: '1 มกราคม 2566',
-    endDate: 'ยังไม่กำหนด',
-    estimatedBudget: '15,000,000 บาท',
-    images: [],
-    comments: [],
   },
 ];
 
@@ -121,44 +76,36 @@ export default function HomeDashboard() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [commenterName, setCommenterName] = useState(''); // 🟨 เพิ่ม state สำหรับชื่อผู้แสดงความคิดเห็น
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleSortByDate = () => {
     setIsSortByDateOpen(!isSortByDateOpen);
     setIsStatusFilterOpen(false);
   };
-
-  const selectSortByDate = (option: string) => {
-    setSelectedSortByDate(option);
-    setIsSortByDateOpen(false);
-  };
-
   const toggleStatusFilter = () => {
     setIsStatusFilterOpen(!isStatusFilterOpen);
     setIsSortByDateOpen(false);
   };
-
+  const selectSortByDate = (option: string) => {
+    setSelectedSortByDate(option);
+    setIsSortByDateOpen(false);
+  };
   const selectStatusFilter = (option: string) => {
     setSelectedStatusFilter(option);
     setIsStatusFilterOpen(false);
   };
-
   const handleProjectClick = (project: Project) => {
     setSelectedProject(project);
-    setShowCommentBox(false); 
+    setShowCommentBox(false);
   };
-
-  const handleCloseProjectDetails = () => {
-    setSelectedProject(null);
-  };
+  const handleCloseProjectDetails = () => setSelectedProject(null);
 
   const handleAddComment = () => {
     if (newComment.trim() === '') return;
 
-    const currentUser = 'ผู้ใช้งานปัจจุบัน'; 
+    // 🟨 ตรวจสอบชื่อที่กรอก หากไม่มี ให้ใช้ค่า default
+    const currentUser = commenterName.trim() === '' ? 'ผู้ไม่ประสงค์ออกนาม' : commenterName;
     const currentDate = new Date().toLocaleDateString('th-TH', {
       day: '2-digit',
       month: '2-digit',
@@ -166,14 +113,6 @@ export default function HomeDashboard() {
     });
 
     if (selectedProject) {
-      const updatedProjects = initialProjects.map((proj) =>
-        proj.id === selectedProject.id
-          ? {
-              ...proj,
-              comments: [...(proj.comments || []), { user: currentUser, text: newComment, date: currentDate }],
-            }
-          : proj
-      );
       setSelectedProject((prev) =>
         prev
           ? {
@@ -182,10 +121,10 @@ export default function HomeDashboard() {
             }
           : null
       );
-
     }
-    setNewComment(''); 
-    setShowCommentBox(false); 
+    setNewComment('');
+    setCommenterName(''); // 🟨 ล้างค่าช่องชื่อหลังจากส่ง
+    setShowCommentBox(false);
   };
 
   return (
@@ -195,11 +134,8 @@ export default function HomeDashboard() {
           <div className="bg-white p-2 rounded-full mr-3">
             <img
               src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
-              alt="เทศบาลตำบลปะโค Logo"
+              alt="Logo"
               className="h-10 w-10 rounded-full"
-              onError={(e) => {
-                e.currentTarget.src = 'https://placehold.co/40x40/ffffff/000000?text=LOGO';
-              }}
             />
           </div>
           <div>
@@ -219,7 +155,7 @@ export default function HomeDashboard() {
             <input
               type="text"
               placeholder="ค้นหาข้อมูลที่นี่..."
-              className="p-2 pl-4 pr-10 bg-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
+              className="p-2 pl-4 pr-10 bg-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none"
             />
             <Search className="absolute right-3 text-gray-500" size={20} />
           </div>
@@ -236,9 +172,7 @@ export default function HomeDashboard() {
             >
               <span className="font-semibold text-gray-800">เมนู</span>
               <ChevronDown
-                className={`text-gray-600 transform transition-transform duration-200 ${
-                  isMenuOpen ? 'rotate-180' : ''
-                }`}
+                className={`text-gray-600 transform transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
                 size={18}
               />
             </div>
@@ -257,12 +191,11 @@ export default function HomeDashboard() {
 
         <main className="flex-1 p-6">
           {selectedProject ? (
-            // Project Detail View
+            // Project Detail
             <div className="bg-white rounded-lg shadow-md p-6 relative">
               <button
                 onClick={handleCloseProjectDetails}
                 className="absolute top-15 right-7 text-gray-500 hover:text-gray-700"
-                aria-label="ปิด"
               >
                 <XCircle size={36} />
               </button>
@@ -274,10 +207,11 @@ export default function HomeDashboard() {
                 </div>
               </div>
 
+              {/* Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                   <p className="text-gray-600 mb-2">
-                    <span className="font-semibold">รายละเอียด:</span> {selectedProject.description || 'ไม่มีรายละเอียด'}
+                    <span className="font-semibold">รายละเอียด:</span> {selectedProject.description || '-'}
                   </p>
                   <p className="text-gray-600 mb-2">
                     <span className="font-semibold">ผู้รับผิดชอบ:</span> {selectedProject.responsiblePerson || '-'}
@@ -294,42 +228,60 @@ export default function HomeDashboard() {
                     <span className="font-semibold">วันที่สิ้นสุด:</span> {selectedProject.endDate || '-'}
                   </p>
                   <p className="text-gray-600 mb-2">
-                    <span className="font-semibold">งบประมาณโดยประมาณ:</span> {selectedProject.estimatedBudget || '-'}
+                    <span className="font-semibold">งบประมาณ:</span> {selectedProject.estimatedBudget || '-'}
                   </p>
                 </div>
               </div>
 
-              {/* Images Section */}
+              {/* Images */}
               {selectedProject.images && selectedProject.images.length > 0 && (
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">รูปภาพ</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {selectedProject.images.map((imgSrc, index) => (
+                    {selectedProject.images.map((img, i) => (
                       <img
-                        key={index}
-                        src={imgSrc}
-                        alt={`รูปภาพโครงการ ${index + 1}`}
+                        key={i}
+                        src={img}
+                        alt={`รูปภาพ ${i + 1}`}
                         className="w-full h-24 object-cover rounded-md shadow-sm"
-                        onError={(e) => {
-                          e.currentTarget.src = 'https://placehold.co/100x100/CCCCCC/333333?text=No+Image';
-                        }}
                       />
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Comments Section */}
-              <div className="mb-6">
+              {/* Documents */}
+              {selectedProject.documents && selectedProject.documents.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">เอกสาร</h3>
+                  <ul className="space-y-2">
+                    {selectedProject.documents.map((doc, i) => (
+                      <li key={i}>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-blue-600 hover:text-blue-800 underline"
+                        >
+                          <FileText size={18} className="mr-2" /> {doc.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Comments */}
+              <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">ความคิดเห็น</h3>
                 <div className="space-y-3 mb-4">
                   {selectedProject.comments && selectedProject.comments.length > 0 ? (
-                    selectedProject.comments.map((comment, index) => (
-                      <div key={index} className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                    selectedProject.comments.map((c, i) => (
+                      <div key={i} className="bg-gray-50 p-3 rounded-md border">
                         <p className="text-sm font-medium text-gray-800">
-                          {comment.user} <span className="text-gray-500 text-xs ml-2">{comment.date}</span>
+                          {c.user} <span className="text-gray-500 text-xs ml-2">{c.date}</span>
                         </p>
-                        <p className="text-gray-700 text-sm mt-1">{comment.text}</p>
+                        <p className="text-gray-700 text-sm mt-1">{c.text}</p>
                       </div>
                     ))
                   ) : (
@@ -338,35 +290,31 @@ export default function HomeDashboard() {
                 </div>
                 <button
                   onClick={() => setShowCommentBox(!showCommentBox)}
-                  className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200"
+                  className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
                 >
-                  <MessageSquare size={18} className="mr-2" />
-                  แสดงความคิดเห็น
+                  <MessageSquare size={18} className="mr-2" /> แสดงความคิดเห็น
                 </button>
-
                 {showCommentBox && (
-                  <div className="mt-4 p-4 bg-gray-100 rounded-md border border-gray-200">
-                    <h4 className="font-semibold text-gray-800 mb-2">เพิ่มความคิดเห็นของคุณ</h4>
-                    <div className="mb-2">
-                      <input
-                        type="text"
-                        placeholder="ชื่อผู้ใช้งาน (จะถูกใส่โดยอัตโนมัติ)"
-                        className="w-full p-2 border border-gray-300 rounded-md bg-gray-200 text-gray-700 cursor-not-allowed"
-                        value="ผู้ใช้งานปัจจุบัน" // Placeholder for current user
-                        disabled
-                      />
-                    </div>
+                  <div className="mt-4 p-4 bg-gray-100 rounded-md border">
+                    {/* 🟨 เพิ่มช่องกรอกชื่อ */}
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded-md mb-2 text-black"
+                      placeholder="ชื่อ-นามสกุล หรือชื่อเล่น"
+                      value={commenterName}
+                      onChange={(e) => setCommenterName(e.target.value)}
+                    />
                     <textarea
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                      className="w-full p-2 border rounded-md text-black"
                       rows={3}
-                      placeholder="เขียนความคิดเห็นของคุณที่นี่..."
+                      placeholder="เขียนความคิดเห็น..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                     ></textarea>
                     <div className="flex justify-end mt-3">
                       <button
                         onClick={handleAddComment}
-                        className="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700 transition-colors duration-200"
+                        className="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700"
                       >
                         ส่ง
                       </button>
@@ -376,86 +324,15 @@ export default function HomeDashboard() {
               </div>
             </div>
           ) : (
-            // Project List View
+            // Project List
             <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">โครงการทั้งหมด</h2>
-                <div className="flex space-x-4">
-                  {/* เรียงจาก - No dropdown */}
-                  <div className="flex items-center text-blue-600">
-                    <span className="font-medium">เรียงจาก</span>
-                  </div>
-
-                  <div className="relative">
-                    <div
-                      className="flex items-center text-blue-600 cursor-pointer hover:text-blue-800"
-                      onClick={toggleSortByDate}
-                    >
-                      <span className="font-medium">{selectedSortByDate}</span>
-                      <ChevronDown className={`ml-1 transform transition-transform duration-200 ${isSortByDateOpen ? 'rotate-180' : ''}`} size={16} />
-                    </div>
-                    {isSortByDateOpen && (
-                      <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-                        <div className="py-1">
-                          {['ใหม่ที่สุด', 'เก่าที่สุด', 'ทั้งหมด'].map((option) => (
-                            <a
-                              key={option}
-                              href="#"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                selectSortByDate(option);
-                              }}
-                            >
-                              {option}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center text-blue-600">
-                    <span className="font-medium">หมวดหมู่</span>
-                  </div>
-
-                  <div className="relative">
-                    <div
-                      className="flex items-center text-blue-600 cursor-pointer hover:text-blue-800"
-                      onClick={toggleStatusFilter}
-                    >
-                      <span className="font-medium">{selectedStatusFilter}</span>
-                      <ChevronDown className={`ml-1 transform transition-transform duration-200 ${isStatusFilterOpen ? 'rotate-180' : ''}`} size={16} />
-                    </div>
-                    {isStatusFilterOpen && (
-                      <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
-                        <div className="py-1">
-                          {['ระงับ', 'เสร็จสิ้น', 'กำลังดำเนินการ', 'ทั้งหมด'].map((option) => (
-                            <a
-                              key={option}
-                              href="#"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                selectStatusFilter(option);
-                              }}
-                            >
-                              {option}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">โครงการทั้งหมด</h2>
               <div className="space-y-4">
                 {initialProjects.map((project) => (
                   <div
                     key={project.id}
-                    className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
-                    onClick={() => handleProjectClick(project)} // Add click handler
+                    className="bg-white border rounded-lg p-4 flex items-center justify-between hover:shadow-md cursor-pointer"
+                    onClick={() => handleProjectClick(project)}
                   >
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800">{project.title}</h3>

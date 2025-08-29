@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown, Home, Plus, Save, X, Trash2, Upload } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 // Define the type for an activity for better code readability
 interface Activity {
@@ -123,7 +124,22 @@ export default function FollowPage() {
     }
   };
 
+  const [formError, setFormError] = useState<string>('');
+
   const handleUpdateFormSubmit = () => {
+    if (
+        !updateForm.activity.trim() ||
+        !updateForm.problem.trim() ||
+        !updateForm.solution.trim() ||
+        !updateForm.updater.trim() ||
+        !updateForm.position.trim()
+      ) {
+        toast.error('กรุณากรอกข้อมูลให้ครบทุกช่องก่อนบันทึก');
+        return;
+      }
+      toast.success('กรอบครบแล้วเย้ดีใจไหม');
+    
+      setFormError('');
     const newUpdate: StatusUpdate = {
       id: statusUpdates.length > 0 ? statusUpdates[statusUpdates.length - 1].id + 1 : 1,
       activity: updateForm.activity,
@@ -142,6 +158,7 @@ export default function FollowPage() {
       position: '',
     });
   };
+
 
   const getStatusClasses = (status: string) => {
     return statusOptions.find(opt => opt.status === status)?.color || '';
@@ -164,6 +181,8 @@ export default function FollowPage() {
       setBalance(isNaN(budget - numericValue) ? '0' : (budget - numericValue).toLocaleString('th-TH'));
     }
   };
+  const [removingIndex, setRemovingIndex] = useState<number | null>(null);
+
 
   return (
     <div className="min-h-screen bg-gray-100 font-inter flex flex-col">
@@ -287,9 +306,41 @@ export default function FollowPage() {
                 </label>
               </div>
             </div>
-              <div className="flex justify-end">
-                <button className="bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-600" onClick={handleUpdateFormSubmit}>บันทึก</button>
-              </div>
+                <div className="flex justify-end">
+                    <Toaster
+                        position="top-right"
+                        reverseOrder={false}
+                        toastOptions={{
+                        success: {
+                            style: {
+                            background: '#22c55e', // green-500
+                            color: '#fff',
+                            padding: '12px 16px',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+                            },
+                            className: 'animate-bounce z-50',
+                        },
+                        error: {
+                            style: {
+                            background: '#ef4444', // red-500
+                            color: '#fff',
+                            padding: '12px 16px',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+                            },
+                            className: 'animate-bounce z-50',
+                        },
+                        }}
+                    />
+
+                    <button
+                        onClick={handleUpdateFormSubmit}
+                        className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                    >
+                        บันทึก
+                    </button>
+                </div> 
             </div>
             <hr className="my-6 border-gray-200" />
             <div className="mt-6">
@@ -305,10 +356,11 @@ export default function FollowPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ผู้บันทึก</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ตำแหน่ง</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"></th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {statusUpdates.map(update => (
+                    {statusUpdates.map((update, index) => (
                       <tr key={update.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{update.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{update.activity}</td>
@@ -317,6 +369,22 @@ export default function FollowPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{update.date}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{update.updater}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{update.position}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <button
+                                onClick={() => {
+                                const lastIndex = statusUpdates.length - 1;
+                                if (index === lastIndex) {
+                                    setStatusUpdates(statusUpdates.filter((_, i) => i !== index));
+                                    toast.success(`ลบรายการที่ ${update.id} สำเร็จ!`);
+                                } else {
+                                toast.error('สามารถลบได้เฉพาะรายการล่าสุดเท่านั้น');
+                                }
+                            }}
+                                className="text-red-500 hover:text-red-700"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -328,11 +396,25 @@ export default function FollowPage() {
               <h3 className="text-xl font-semibold text-gray-800 mb-4">รูปภาพ</h3>
               <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {uploadedImages.map((image, index) => (
-                  <div key={index} className="relative group overflow-hidden rounded-lg shadow-md">
+                  <div key={index} className={`relative group overflow-hidden rounded-lg shadow-md transition-all duration-200 ${
+                    removingIndex === index ? 'opacity-0 scale-90' : 'opacity-100 scale-100'}`}>
                     <img src={image} alt={`Uploaded ${index + 1}`} className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <span className="text-white text-xs text-center p-2">
-                        รูปภาพ {index + 1}
+                    <button
+                      onClick={() =>{
+                        setRemovingIndex(index);
+                        setTimeout(() => {
+                            setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+                            setRemovingIndex(null);
+                            toast.success(`ลบรูปภาพ ${index + 1} สำเร็จ!`);
+                            }, 400);
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-auto"
+                    >
+                        <X size={16} />
+                    </button>
+                    <div className="absolute inset-0 bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                      <span className="text-black text-s text-center p-2 pointer-events-none">
+                        {index + 1}
                       </span>
                     </div>
                   </div>
@@ -399,8 +481,8 @@ export default function FollowPage() {
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-between items-center mt-4">
-              <div className="flex space-x-2">
+            <div className="flex justify-center items-center mt-4">
+              {/* <div className="flex space-x-2">
                 <button
                   onClick={addActivity}
                   className="bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-600 flex items-center justify-center font-semibold"
@@ -415,7 +497,7 @@ export default function FollowPage() {
                   <Trash2 size={20} className="mr-2" />
                   ลบกิจกรรมล่าสุด
                 </button>
-              </div>
+              </div> */}
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">ความสำเร็จ</span>
                 <div className="w-48 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
