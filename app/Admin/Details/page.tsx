@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Home, Search, ChevronDown, FileText, Download } from 'lucide-react';
+import { ChevronDown, Download, FileText, Home, Search } from 'lucide-react';
+import { useState } from 'react';
 
 export default function DetailPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);

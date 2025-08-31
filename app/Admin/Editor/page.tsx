@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, ChevronDown, Home, Plus, Save, X, Upload, Trash2 } from 'lucide-react'; // เพิ่ม Trash2 icon
+import { ChevronDown, Home, Save, Search, Trash2, Upload, X } from 'lucide-react'; // เพิ่ม Trash2 icon
+import { useState } from 'react';
 
 export default function DashboardLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
@@ -24,26 +24,15 @@ export default function DashboardLayout() {
     const newId = activities.length > 0 ? activities[activities.length - 1].id + 1 : 1;
     setActivities([...activities, { id: newId, description: '', startDate: '', endDate: '' }]);
   };
+
   const removeLastActivity = () => {
     if (activities.length > 0) {
       setActivities(activities.slice(0, -1));
     }
   };
 
-
   const [newDocument, setNewDocument] = useState({ name: '', file: null, data: '' });
-  const [documents, setDocuments] = useState([
-    { id: 1, name: 'ข้อมูลโครงการฉบับเต็ม', file: 'เอกสาร.pdf', isSelected: true, isPublic: true },
-    { id: 2, name: 'หนังสือเสนอ', file: 'เอกสาร.pdf', isSelected: false, isPublic: false },
-    { id: 3, name: 'การจัดซื้อจัดจ้าง', file: 'เอกสาร.pdf', isSelected: false, isPublic: true },
-    { id: 4, name: 'วิเคราะห์', file: 'เอกสาร.pdf', isSelected: false, isPublic: true },
-    { id: 5, name: 'หนังสือสัญญาจ้าง', file: 'Upload file', isSelected: false, isPublic: false },
-    { id: 6, name: 'เอกสารส่งมอบ', file: 'Upload file', isSelected: false, isPublic: false },
-    { id: 7, name: 'แผนการใช้จ่ายงบประมาณ', file: 'เอกสาร.pdf', isSelected: true, isPublic: true },
-    { id: 8, name: 'ไฟล์ยืนยันงบประมาณ', file: 'Upload file', isSelected: false, isPublic: false },
-    { id: 9, name: 'เอกสารอนุมัติงบประมาณ', file: 'Upload file', isSelected: false, isPublic: false },
-    { id: 10, name: 'เอกสารสำเร็จโครงการ', file: 'Upload file', isSelected: false, isPublic: false },
-  ]);
+  const [documents, setDocuments] = useState([]);
 
   const handleDocumentSelect = (id) => {
     setDocuments(documents.map(doc =>
@@ -51,14 +40,12 @@ export default function DashboardLayout() {
     ));
   };
 
-  // เพิ่มฟังก์ชันสำหรับจัดการสถานะ Public
   const handlePublicSelect = (id) => {
     setDocuments(documents.map(doc =>
       doc.id === id ? { ...doc, isPublic: !doc.isPublic } : doc
     ));
   };
-  
-  // เพิ่มฟังก์ชันสำหรับลบเอกสาร
+
   const handleDeleteDocument = (id) => {
     setDocuments(documents.filter(doc => doc.id !== id));
   };
@@ -66,12 +53,10 @@ export default function DashboardLayout() {
   const handleFileUpload = (e, id) => {
     const file = e.target.files[0];
     if (id) {
-      // สำหรับการอัปโหลดไฟล์ในตารางที่มีอยู่
       setDocuments(documents.map(doc =>
         doc.id === id ? { ...doc, file: file.name } : doc
       ));
     } else {
-      // สำหรับการอัปโหลดไฟล์ใหม่ในฟอร์มเพิ่มเอกสาร
       setNewDocument({ ...newDocument, file: file });
     }
   };
@@ -81,7 +66,6 @@ export default function DashboardLayout() {
       const newId = documents.length > 0 ? documents[documents.length - 1].id + 1 : 1;
       setDocuments([...documents, { id: newId, name: newDocument.name, file: newDocument.file.name, isSelected: false, isPublic: false }]);
       setNewDocument({ name: '', file: null, data: '' });
-      console.log("Document added:", newDocument);
     }
   };
 
@@ -156,9 +140,7 @@ export default function DashboardLayout() {
             >
               <span className="font-semibold text-gray-800">เมนู</span>
               <ChevronDown
-                className={`text-gray-600 transform transition-transform duration-200 ${
-                  isMenuOpen ? 'rotate-180' : ''
-                }`}
+                className={`text-gray-600 transform transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`}
                 size={18}
               />
             </div>
@@ -310,65 +292,7 @@ export default function DashboardLayout() {
             </div>
           </div>
 
-          {/* Section 2: Activities */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">กิจกรรม</h2>
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                      ลำดับ
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      รายละเอียดขั้นตอน/วิธีดำเนินการ
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
-                      ระยะเวลาดำเนินการ
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {activities.map((activity) => (
-                    <tr key={activity.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {activity.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <input
-                          type="text"
-                          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-400"
-                          defaultValue={activity.description}
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap  text-sm text-gray-900">
-                        <div className="flex space-x-2">
-                          <input type="text" className="w-[100px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" placeholder="เริ่มต้น" />
-                          <input type="text" className="w-[100px] p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-center" placeholder="สิ้นสุด" />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <button
-              onClick={addActivity}
-              className="mt-4 w-full bg-blue-500 text-white py-3 rounded-md shadow-sm hover:bg-blue-600 flex items-center justify-center font-semibold"
-            >
-              <Plus size={20} className="mr-2" />
-              เพิ่ม
-            </button>
-            <button
-              onClick={removeLastActivity}
-              className="mt-4 w-full bg-red-400 text-white py-3 rounded-md shadow-sm hover:bg-red-300 flex items-center justify-center font-semibold"
-            >
-              <X size={20} className="mr-2" />
-              ลบ
-            </button>
-          </div>
-
-          {/* Section 3: Document Management */}
+          {/* Section 2: Document Management */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">เอกสาร</h2>
 
@@ -398,16 +322,6 @@ export default function DashboardLayout() {
                       className="hidden"
                     />
                   </label>
-                </div>
-                <div className="md:col-span-2">
-                  <label htmlFor="docData" className="text-gray-600 mb-1">ข้อมูลที่ต้องการให้แสดง</label>
-                  <textarea
-                    id="docData"
-                    rows="4"
-                    value={newDocument.data}
-                    onChange={(e) => setNewDocument({ ...newDocument, data: e.target.value })}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-400"
-                  ></textarea>
                 </div>
               </div>
               <div className="flex justify-end mt-4">
@@ -484,52 +398,6 @@ export default function DashboardLayout() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            </div>
-          </div>
-          {/* ส่วนอื่น ๆ ของโค้ดที่เหลือยังคงเดิม */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">ข้อมูลโครงการจากเอกสาร</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-xl font-medium text-gray-700 mb-1">ชื่อเอกสาร: <span className="font-normal">ข้อมูลโครงการฉบับเต็ม</span></h3>
-                <h4 className="font-semibold text-gray-800">เป้าหมายของโครงการ</h4>
-                <ul className="list-decimal list-inside text-gray-700 pl-4">
-                  <li>เพื่อซ่อมแซมถนนที่ชำรุดเสียหายในพื้นที่ (ระบุชื่อพื้นที่ให้สามารถใช้งานได้อย่างมีประสิทธิภาพ</li>
-                  <li>เพื่ออำนวยความสะดวกและความปลอดภัยแก่ประชาชนในการสัญจร</li>
-                  <li>เพื่อเพิ่มคุณภาพโครงสร้างพื้นฐานในพื้นที่ ส่งเสริมการคมนาคมและเศรษฐกิจชุมชน</li>
-                  <li>เพื่อลดอุบัติเหตุที่เกิดจากพื้นผิวถนนที่ไม่เรียบหรือมีหลุมบ่อ</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-800 mt-4">งบประมาณและแหล่งที่มาของงบประมาณ</h4>
-                <ul className="list-disc list-inside text-gray-700 pl-4">
-                  <li>งบประมาณในการดำเนินโครงการจำนวน 350,000 (สามแสนห้าหมื่นบาทถ้วน)</li>
-                  <li>โดยใช้จ่ายในรายการหลัก รายการรายละเอียดจำนวนเงิน</li>
-                  <li>ค่าปรับพื้นผิวและเตรียมพื้นผิวงานถนนเดิม 30,000</li>
-                  <li>ค่าวัสดุยางมะตอยยางมะตอยพร้อมขนส่ง 200,000</li>
-                  <li>ค่าแรงงานและเครื่องจักรแรงงานพร้อมรถบดอัด 100,000</li>
-                  <li>ค่าดำเนินการอื่น ๆ ค่าใช้จ่ายเบ็ดเตล็ด 20,000</li>
-                  <li>รวมทั้งสิ้น 350,000</li>
-                </ul>
-              </div>
-              <div className="pt-4 border-t border-gray-200">
-                <h3 className="text-xl font-medium text-gray-700 mb-1">ชื่อเอกสาร: <span className="font-normal">หนังสือเสนอ</span></h3>
-                <h4 className="font-semibold text-gray-800">ขอบเขต</h4>
-                <ul className="list-disc list-inside text-gray-700 pl-4">
-                  <li>พื้นที่ดำเนินโครงการ</li>
-                  <ul className="list-disc list-inside text-gray-700 pl-8">
-                    <li>ถนนในเขต หมู่ที่ 3 ตำบลทุ่งใหญ่ อำเภอเมือง จังหวัดนครราชสีมา</li>
-                    <li>ความยาวถนนที่ซ่อมแซมประมาณ 500 เมตร ความกว้างเฉลี่ย 5 เมตร</li>
-                  </ul>
-                  <li>ลักษณะของงานซ่อมแซม</li>
-                  <ul className="list-disc list-inside text-gray-700 pl-8">
-                    <li>การปรับระดับพื้นถนนเดิมและทำความสะอาดผิวหน้าถนน</li>
-                    <li>การลาดยางมะตอยแบบร้อน หนาเฉลี่ยประมาณ 5 เซนติเมตร</li>
-                    <li>อุดรอยแตก รอยแยก และหลุมบ่อที่เกิดจากการใช้งาน</li>
-                    <li>ติดตั้งแผงเสริมความแข็งแรงบริเวณขอบถนน</li>
-                  </ul>
-                </ul>
               </div>
             </div>
           </div>

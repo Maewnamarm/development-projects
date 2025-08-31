@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Home, Plus, Save, X, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, Home, Search, Trash2, Upload, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // Define the type for an activity for better code readability
