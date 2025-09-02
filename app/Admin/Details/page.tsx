@@ -30,9 +30,18 @@ export default function DetailPage() {
   };
 
   const statusOptions = {
-    'กำลังดำเนินการ': { color: 'bg-yellow-200 text-yellow-800 border-yellow-300', dot: 'bg-yellow-500' },
-    'ระงับ': { color: 'bg-red-200 text-red-800 border-red-300', dot: 'bg-red-500' },
-    'เสร็จสิ้น': { color: 'bg-green-200 text-green-800 border-green-300', dot: 'bg-green-500' },
+    กำลังดำเนินการ: {
+      color: 'bg-yellow-200 text-yellow-800 border-yellow-300',
+      dot: 'bg-yellow-500',
+    },
+    ระงับ: {
+      color: 'bg-red-200 text-red-800 border-red-300',
+      dot: 'bg-red-500',
+    },
+    เสร็จสิ้น: {
+      color: 'bg-green-200 text-green-800 border-green-300',
+      dot: 'bg-green-500',
+    },
   };
 
   const getStatusClasses = (status) => {
@@ -44,25 +53,27 @@ export default function DetailPage() {
   };
 
   // The dummy URL for a placeholder PDF document. This should be replaced with an actual file URL from Supabase storage.
-  const dummyFileUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+  const dummyFileUrl =
+    'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
 
-  const documents = [
-    { name: 'ข้อมูลโครงการฉบับเต็ม', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'หนังสือเสนอ', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'การจัดซื้อจัดจ้าง', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'วิเคราะห์', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'หนังสือสัญญาจ้าง', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'เอกสารส่งมอบ', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'แผนการใช้จ่ายงบประมาณ', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'ไฟล์ยืนยันงบประมาณ', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'เอกสารอนุมัติงบประมาณ', file: 'เอกสาร.pdf', url: dummyFileUrl },
-    { name: 'เอกสารสำเร็จโครงการ', file: 'เอกสาร.pdf', url: dummyFileUrl },
-  ];
+  const documents = [];
 
   const activities = [
-    { id: 1, description: 'XXXXXXXXXXXXXXXXXXXXXX', duration: '00/00/00 - 00/00/00' },
-    { id: 2, description: 'XXXXXXXXXXXXXXXXXXXXXX', duration: '00/00/00 - 00/00/00' },
-    { id: 3, description: 'XXXXXXXXXXXXXXXXXXXXXX', duration: '00/00/00 - 00/00/00' },
+    {
+      id: 1,
+      description: 'XXXXXXXXXXXXXXXXXXXXXX',
+      duration: '00/00/00 - 00/00/00',
+    },
+    {
+      id: 2,
+      description: 'XXXXXXXXXXXXXXXXXXXXXX',
+      duration: '00/00/00 - 00/00/00',
+    },
+    {
+      id: 3,
+      description: 'XXXXXXXXXXXXXXXXXXXXXX',
+      duration: '00/00/00 - 00/00/00',
+    },
   ];
 
   return (
@@ -75,12 +86,15 @@ export default function DetailPage() {
               alt="เทศบาลตำบลปะโค Logo"
               className="h-10 w-10 rounded-full"
               onError={(e) => {
-                e.currentTarget.src = 'https://placehold.co/40x40/ffffff/000000?text=LOGO';
+                e.currentTarget.src =
+                  'https://placehold.co/40x40/ffffff/000000?text=LOGO';
               }}
             />
           </div>
           <div>
-            <h1 className="text-xl font-bold">การจัดการโครงการพัฒนาเทศบาลตำบลปะโค</h1>
+            <h1 className="text-xl font-bold">
+              การจัดการโครงการพัฒนาเทศบาลตำบลปะโค
+            </h1>
             <p className="text-sm">อำเภอเมืองหนองคาย จังหวัดหนองคาย</p>
           </div>
         </div>
@@ -153,13 +167,21 @@ export default function DetailPage() {
           {/* Section 1: Project Information */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-semibold text-gray-800">ข้อมูลโครงการ</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                ข้อมูลโครงการ
+              </h2>
               <div className="flex items-center">
                 <span className="text-gray-700 mr-2">สถานะ :</span>
                 <span
-                  className={`flex items-center px-4 py-2 rounded-full border ${getStatusClasses(projectData.status)}`}
+                  className={`flex items-center px-4 py-2 rounded-full border ${getStatusClasses(
+                    projectData.status
+                  )}`}
                 >
-                  <div className={`w-3 h-3 rounded-full mr-2 ${getStatusDotColor(projectData.status)}`}></div>
+                  <div
+                    className={`w-3 h-3 rounded-full mr-2 ${getStatusDotColor(
+                      projectData.status
+                    )}`}
+                  ></div>
                   {projectData.status}
                 </span>
               </div>
@@ -206,7 +228,9 @@ export default function DetailPage() {
                 </div>
                 <div className="flex">
                   <span className="font-semibold w-40">ผู้รับผิดชอบ :</span>
-                  <span className="flex-1">{projectData.responsiblePerson}</span>
+                  <span className="flex-1">
+                    {projectData.responsiblePerson}
+                  </span>
                 </div>
                 <div className="flex">
                   <span className="font-semibold w-40">ข้อมูลติดต่อ :</span>
@@ -218,18 +242,29 @@ export default function DetailPage() {
 
           {/* Section 2: Activities */}
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">กิจกรรม</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              กิจกรรม
+            </h2>
             <div className="overflow-x-auto rounded-lg border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12"
+                    >
                       ลำดับ
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       รายละเอียดขั้นตอน/วิธีดำเนินการ
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48"
+                    >
                       ระยะเวลาดำเนินการ
                     </th>
                   </tr>
@@ -255,15 +290,23 @@ export default function DetailPage() {
 
           {/* Section 3: Documents (Updated to a table format with clickable links) */}
           <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">เอกสาร</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              เอกสาร
+            </h2>
             <div className="overflow-x-auto rounded-lg border border-gray-200">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       ชื่อเอกสาร
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       ไฟล์เอกสาร
                     </th>
                     <th scope="col" className="relative px-6 py-3">
@@ -281,12 +324,20 @@ export default function DetailPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline">
-                        <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           {doc.file}
                         </a>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href={doc.url} download className="text-blue-600 hover:text-blue-900">
+                        <a
+                          href={doc.url}
+                          download
+                          className="text-blue-600 hover:text-blue-900"
+                        >
                           <Download size={18} />
                         </a>
                       </td>
@@ -294,23 +345,6 @@ export default function DetailPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          {/* Section 4: Project Data from Documents (Empty) */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">ข้อมูลโครงการจากเอกสาร</h2>
-            <div className="space-y-4">
-              {documents.map((doc, index) => (
-                <div key={index} className="pt-4 border-t border-gray-200 first:border-t-0">
-                  <h3 className="text-xl font-medium text-gray-700 mb-1">ชื่อเอกสาร: <span className="font-normal">{doc.name}</span></h3>
-                  <div className="space-y-2 text-gray-700 pl-4">
-                    <h4 className="font-semibold text-gray-800">ข้อมูลเอกสาร:</h4>
-                    {/* Placeholder for document data */}
-                    <div className="text-gray-500 italic">ไม่มีข้อมูลที่แสดง</div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </main>
