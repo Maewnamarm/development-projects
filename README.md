@@ -36,7 +36,7 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 ```
-development-projects
+development-projects-master
 ├─ app
 │  ├─ Admin
 │  │  ├─ AddProject
@@ -70,13 +70,16 @@ development-projects
 │  │  │  └─ page.tsx
 │  │  └─ TestApi
 │  │     └─ page.tsx
-│  ├─ backend
-│  │  └─ supabaseAPI.js
+│  ├─ api
+│  │  └─ projects
+│  │     └─ route.ts
 │  ├─ favicon.ico
 │  ├─ globals.css
 │  ├─ layout.tsx
 │  └─ page.tsx
 ├─ eslint.config.mjs
+├─ lib
+│  └─ supabase.ts
 ├─ next.config.ts
 ├─ package-lock.json
 ├─ package.json

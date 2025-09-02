@@ -1,34 +1,38 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import Image from 'next/image'
-import { supabase } from '@/supabase'
-import bcrypt from 'bcryptjs'
+import { supabase } from '@/supabase';
+import bcrypt from 'bcryptjs';
+import Image from 'next/image';
+import React, { useState } from 'react';
 
 interface Officer {
-  id: number
-  email: string
-  agency: string
-  created_at: string
+  id: number;
+  email: string;
+  agency: string;
+  created_at: string;
 }
 
 // ฟังก์ชันลงทะเบียน officer
-async function registerOfficer(email: string, password: string, agency: string) {
-    try {
-      const hashed = await bcrypt.hash(password, 10)
-  
-      // ✅ ใส่บรรทัดนี้แทน insert เดิม
-      const { data, error } = await supabase
-        .from('officers')
-        .insert([{ email, password: hashed, agency, created_at: new Date() }])
-  
-      if (error) throw new Error(error.message || JSON.stringify(error))
-  
-      return data
-    } catch (err: any) {
-      // แสดงข้อความ error ชัดเจน
-      throw new Error(err.message || JSON.stringify(err))
-    }
+async function registerOfficer(
+  email: string,
+  password: string,
+  agency: string
+) {
+  try {
+    const hashed = await bcrypt.hash(password, 10);
+
+    // ✅ ใส่บรรทัดนี้แทน insert เดิม
+    const { data, error } = await supabase
+      .from('officers')
+      .insert([{ email, password: hashed, agency, created_at: new Date() }]);
+
+    if (error) throw new Error(error.message || JSON.stringify(error));
+
+    return data;
+  } catch (err: any) {
+    // แสดงข้อความ error ชัดเจน
+    throw new Error(err.message || JSON.stringify(err));
+  }
 }
 
 // ฟังก์ชัน login officer
@@ -37,62 +41,62 @@ async function loginOfficer(email: string, password: string) {
     .from('officers')
     .select('*')
     .eq('email', email)
-    .single()
+    .single();
 
-  if (error || !officer) throw new Error('User not found')
+  if (error || !officer) throw new Error('User not found');
 
-  const valid = await bcrypt.compare(password, officer.password)
-  if (!valid) throw new Error('Invalid password')
+  const valid = await bcrypt.compare(password, officer.password);
+  if (!valid) throw new Error('Invalid password');
 
-  return officer as Officer
+  return officer as Officer;
 }
 
 const OfficerLoginPage: React.FC = () => {
-  const [isRegistering, setIsRegistering] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [agency, setAgency] = useState('')
-  const [message, setMessage] = useState<string | null>(null)
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [agency, setAgency] = useState('');
+  const [message, setMessage] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setMessage(null)
+    e.preventDefault();
+    setMessage(null);
 
     try {
-      const officer = await loginOfficer(email, password)
-      setMessage(`✅ Login success: ${officer.email} (${officer.agency})`)
+      const officer = await loginOfficer(email, password);
+      setMessage(`✅ Login success: ${officer.email} (${officer.agency})`);
     } catch (err: any) {
-      setMessage(`❌ Login failed: ${err.message}`)
+      setMessage(`❌ Login failed: ${err.message}`);
     }
-  }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setMessage(null)
+    e.preventDefault();
+    setMessage(null);
 
     if (password !== confirmPassword) {
-      setMessage('❌ รหัสผ่านไม่ตรงกัน')
-      return
+      setMessage('❌ รหัสผ่านไม่ตรงกัน');
+      return;
     }
 
     if (!agency) {
-      setMessage('❌ กรุณากรอกหน่วยงาน')
-      return
+      setMessage('❌ กรุณากรอกหน่วยงาน');
+      return;
     }
 
     try {
-      await registerOfficer(email, password, agency)
-      setMessage('✅ Register success! สามารถล็อกอินได้ทันที')
-      setIsRegistering(false)
-      setEmail('')
-      setPassword('')
-      setConfirmPassword('')
-      setAgency('')
+      await registerOfficer(email, password, agency);
+      setMessage('✅ Register success! สามารถล็อกอินได้ทันที');
+      setIsRegistering(false);
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setAgency('');
     } catch (err: any) {
-      setMessage(`❌ Register failed: ${err.message}`)
+      setMessage(`❌ Register failed: ${err.message}`);
     }
-  }
+  };
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-gray-100">
@@ -222,12 +226,14 @@ const OfficerLoginPage: React.FC = () => {
           )}
 
           {message && (
-            <div className="mt-4 text-center text-sm text-red-600">{message}</div>
+            <div className="mt-4 text-center text-sm text-red-600">
+              {message}
+            </div>
           )}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default OfficerLoginPage
+export default OfficerLoginPage;
