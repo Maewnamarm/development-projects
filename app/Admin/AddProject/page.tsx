@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, Home, Plus, Save, Search, Trash2, Upload, X } from 'lucide-react';
+import { ChevronDown, Home, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import toast, { Toaster } from 'react-hot-toast';
@@ -25,6 +25,13 @@ export default function AddProject() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const toggleMenu = () => setIsMenuOpen((v) => !v);
   const navigateTo = (path: string) => { window.location.href = path; };
+
+  // --- safeNumber อยู่ใน scope ของ component ---
+  const safeNumber = (n: any) => {
+    if (n === "" || n === null || n === undefined) return null;
+    const num = Number(n);
+    return isNaN(num) ? null : num;
+  };
 
   /** Project Info */
   const [projectInfo, setProjectInfo] = useState({
@@ -57,10 +64,6 @@ export default function AddProject() {
   const [newDocument, setNewDocument] = useState<{ name: string; file: File | null }>({ name: '', file: null });
   const [documents, setDocuments] = useState<any[]>([]);
 
-  const handleDocumentSelect = (id: number) => {
-    setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, isSelected: !doc.isSelected } : doc));
-  };
-
   const handlePublicSelect = (id: number) => {
     setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, isPublic: !doc.isPublic } : doc));
   };
@@ -70,15 +73,10 @@ export default function AddProject() {
     toast.success("ลบเอกสารสำเร็จ");
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, id?: number) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (id) {
-      setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, file } : doc));
-    } else {
-      setNewDocument(prev => ({ ...prev, file }));
-    }
+    setNewDocument(prev => ({ ...prev, file }));
   };
 
   const addDocument = async () => {
@@ -86,29 +84,44 @@ export default function AddProject() {
       toast.error("กรุณากรอกชื่อเอกสารและเลือกไฟล์ก่อนบันทึก");
       return;
     }
-
+  
     try {
-      const fileExt = newDocument.file.name.split(".").pop();
-      const fileName = `project-${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from("project-files").upload(fileName, newDocument.file);
-
-      if (uploadError) throw uploadError;
-
-      const { publicURL, error: urlError } = supabase.storage.from("project-files").getPublicUrl(fileName);
-      if (urlError) throw urlError;
-
+      const file = newDocument.file;
+  
+      const toBase64 = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            const result = reader.result;
+            if (!result) return reject("ไฟล์ว่าง");
+            resolve((result as string).split(",")[1]); // เอาเฉพาะ Base64
+          };
+          reader.onerror = (err) => reject(err);
+        });
+  
+      const base64File = await toBase64(file);
+  
       setDocuments(prev => [
         ...prev,
-        { id: nextId(prev), name: newDocument.name, file: publicURL, isSelected: false, isPublic: false }
+        {
+          id: nextId(prev),
+          name: newDocument.name,
+          file: base64File,
+          type: file.type,
+          isPublic: false,
+        }
       ]);
-
-      setNewDocument({ name: '', file: null });
-      toast.success("อัปโหลดเอกสารเรียบร้อย");
-    } catch (error: any) {
-      console.error(error);
-      toast.error("เกิดข้อผิดพลาด: " + error.message);
+  
+      setNewDocument({ name: "", file: null });
+      toast.success("เพิ่มเอกสารเรียบร้อย");
+    } catch (err: any) {
+      toast.error("เกิดข้อผิดพลาดในการแปลงไฟล์: " + err);
     }
   };
+  
+  
+  
 
   /** Status */
   const [selectedStatus, setSelectedStatus] = useState('กำลังดำเนินการ');
@@ -118,7 +131,6 @@ export default function AddProject() {
 
   /** Save Project */
   const handleSave = async () => {
-    // validation
     if (!projectInfo.projName || !projectInfo.projCode || !projectInfo.department) {
       toast.error("กรุณากรอกข้อมูลโครงการให้ครบ");
       return;
@@ -130,6 +142,7 @@ export default function AddProject() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...projectInfo,
+          budget: safeNumber(projectInfo.budget),
           status: selectedStatus,
           activities,
           documents
@@ -172,7 +185,6 @@ export default function AddProject() {
               <span className="font-semibold text-gray-800">เมนู</span>
               <ChevronDown className={`text-gray-600 transform transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} size={18} />
             </div>
-
             {isMenuOpen && (
               <ul className="space-y-1">
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Site')}>โครงการทั้งหมด</li>
@@ -189,7 +201,6 @@ export default function AddProject() {
           {/* Project Info */}
           <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
             <h2 className="text-2xl font-semibold text-gray-800">เพิ่มโครงการใหม่</h2>
-
             <Field label="ชื่อโครงการ">
               <input type="text" value={projectInfo.projName} onChange={e => handleProjectChange('projName', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
             </Field>
@@ -292,7 +303,7 @@ export default function AddProject() {
                 <input type="text" value={newDocument.name} onChange={e => setNewDocument(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded-md text-black" />
               </Field>
               <Field label="ไฟล์เอกสาร">
-                <label className="flex items-center justify-center p-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100">
+                <label className="flex items-center justify-center p-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 text-gray-300">
                   <Upload size={18} className="mr-2" />
                   {newDocument.file ? newDocument.file.name : 'Upload file'}
                   <input type="file" className="hidden" onChange={handleFileUpload} />
@@ -301,7 +312,6 @@ export default function AddProject() {
             </div>
             <button onClick={addDocument} className="bg-blue-500 text-white px-4 py-2 rounded-md">บันทึกเอกสาร</button>
 
-            {/* Document List */}
             <table className="min-w-full divide-y divide-gray-200 mt-4">
               <thead>
                 <tr>
@@ -319,10 +329,14 @@ export default function AddProject() {
                     </Td>
                     <Td>{doc.name}</Td>
                     <Td>
-                      <a href={doc.file} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{doc.name}</a>
+                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                        {doc.name}
+                      </a>
                     </Td>
                     <Td>
-                      <button onClick={() => handleDeleteDocument(doc.id)} className="text-red-600 hover:text-red-900"><Trash2 size={18} /></button>
+                      <button onClick={() => handleDeleteDocument(doc.id)} className="text-red-600 hover:text-red-900">
+                        <Trash2 size={18} />
+                      </button>
                     </Td>
                   </tr>
                 ))}
