@@ -1,19 +1,24 @@
 'use client';
 
-import { ChevronDown, Home, Plus, Save, Trash2, Upload, X } from 'lucide-react';
+import { ChevronDown, Plus, Save, Trash2, Upload, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import toast, { Toaster } from 'react-hot-toast';
-
-// สร้าง Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const STATUS_OPTIONS = [
   { status: 'กำลังดำเนินการ', color: 'bg-yellow-200 text-yellow-800 border-yellow-300', dot: 'bg-yellow-500' },
   { status: 'ระงับ', color: 'bg-red-200 text-red-800 border-red-300', dot: 'bg-red-500' },
   { status: 'เสร็จสิ้น', color: 'bg-green-200 text-green-800 border-green-300', dot: 'bg-green-500' },
+];
+
+const CATEGORY_OPTIONS = [
+  'เทคโนโลยี',
+  'การศึกษา',
+  'สาธารณสุข',
+  'เศรษฐกิจ',
+  'สังคม',
+  'โครงสร้างพื้นฐาน',
+  'สิ่งแวดล้อม',
+  'การบริหาร',
+  'อื่นๆ'
 ];
 
 const PLACEHOLDER_LOGO = 'https://placehold.co/40x40/ffffff/000000?text=LOGO';
@@ -70,7 +75,7 @@ export default function AddProject() {
 
   const handleDeleteDocument = (id: number) => {
     setDocuments(prev => prev.filter(doc => doc.id !== id));
-    toast.success("ลบเอกสารสำเร็จ");
+    alert("ลบเอกสารสำเร็จ");
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +86,7 @@ export default function AddProject() {
 
   const addDocument = async () => {
     if (!newDocument.name || !newDocument.file) {
-      toast.error("กรุณากรอกชื่อเอกสารและเลือกไฟล์ก่อนบันทึก");
+      alert("กรุณากรอกชื่อเอกสารและเลือกไฟล์ก่อนบันทึก");
       return;
     }
   
@@ -114,14 +119,11 @@ export default function AddProject() {
       ]);
   
       setNewDocument({ name: "", file: null });
-      toast.success("เพิ่มเอกสารเรียบร้อย");
+      alert("เพิ่มเอกสารเรียบร้อย");
     } catch (err: any) {
-      toast.error("เกิดข้อผิดพลาดในการแปลงไฟล์: " + err);
+      alert("เกิดข้อผิดพลาดในการแปลงไฟล์: " + err);
     }
   };
-  
-  
-  
 
   /** Status */
   const [selectedStatus, setSelectedStatus] = useState('กำลังดำเนินการ');
@@ -129,10 +131,17 @@ export default function AddProject() {
   const statusMeta = useMemo(() => getStatusMeta(selectedStatus), [selectedStatus]);
   const handleStatusSelect = (status: string) => { setSelectedStatus(status); setIsStatusDropdownOpen(false); };
 
+  /** Category Dropdown */
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const handleCategorySelect = (category: string) => { 
+    handleProjectChange('category', category); 
+    setIsCategoryDropdownOpen(false); 
+  };
+
   /** Save Project */
   const handleSave = async () => {
     if (!projectInfo.projName || !projectInfo.projCode || !projectInfo.department) {
-      toast.error("กรุณากรอกข้อมูลโครงการให้ครบ");
+      alert("กรุณากรอกข้อมูลโครงการให้ครบ");
       return;
     }
 
@@ -151,19 +160,18 @@ export default function AddProject() {
 
       const data = await response.json();
       if (response.ok) {
-        toast.success("บันทึกโครงการเรียบร้อย");
+        alert("บันทึกโครงการเรียบร้อย");
         setTimeout(() => navigateTo("/Admin/Site"), 1000);
       } else {
-        toast.error("บันทึกโครงการไม่สำเร็จ: " + data.message);
+        alert("บันทึกโครงการไม่สำเร็จ: " + data.message);
       }
     } catch (error: any) {
-      toast.error("เกิดข้อผิดพลาด: " + error.message);
+      alert("เกิดข้อผิดพลาด: " + error.message);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 font-inter flex flex-col">
-      <Toaster position="top-right" />
+    <div className="min-h-screen bg-gray-100 font-sans flex flex-col">
       {/* Header */}
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
@@ -228,26 +236,44 @@ export default function AddProject() {
             {/* Status */}
             <div className="flex items-center space-x-4">
               <label className="text-gray-700">สถานะ:</label>
-              <div className={`flex items-center px-4 py-2 rounded-full border cursor-pointer ${statusMeta.color}`} onClick={() => setIsStatusDropdownOpen(v => !v)}>
-                <div className={`w-3 h-3 rounded-full mr-2 ${statusMeta.dot}`}></div>
-                {selectedStatus}
-                <ChevronDown size={16} className={`ml-2 transform transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+              <div className="relative">
+                <div className={`flex items-center px-4 py-2 rounded-full border cursor-pointer ${statusMeta.color}`} onClick={() => setIsStatusDropdownOpen(v => !v)}>
+                  <div className={`w-3 h-3 rounded-full mr-2 ${statusMeta.dot}`}></div>
+                  {selectedStatus}
+                  <ChevronDown size={16} className={`ml-2 transform transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+                {isStatusDropdownOpen && (
+                  <ul className="absolute top-full mt-1 w-48 bg-white border rounded shadow-lg z-10">
+                    {STATUS_OPTIONS.map(opt => (
+                      <li key={opt.status} className="px-4 py-2 cursor-pointer hover:bg-gray-100 flex items-center" onClick={() => handleStatusSelect(opt.status)}>
+                        <div className={`w-3 h-3 rounded-full mr-2 ${opt.dot}`}></div>
+                        {opt.status}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              {isStatusDropdownOpen && (
-                <ul className="absolute mt-10 w-48 bg-white border rounded shadow z-10">
-                  {STATUS_OPTIONS.map(opt => (
-                    <li key={opt.status} className="px-4 py-2 cursor-pointer hover:bg-gray-100 flex items-center" onClick={() => handleStatusSelect(opt.status)}>
-                      <div className={`w-3 h-3 rounded-full mr-2 ${opt.dot}`}></div>
-                      {opt.status}
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
 
+            {/* Category Dropdown */}
             <Field label="หมวดหมู่">
-              <input type="text" value={projectInfo.category} onChange={e => handleProjectChange('category', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+              <div className="relative">
+                <div className="flex items-center justify-between w-full p-2 border border-gray-300 rounded-md cursor-pointer bg-white text-black" onClick={() => setIsCategoryDropdownOpen(v => !v)}>
+                  <span>{projectInfo.category || 'เลือกหมวดหมู่'}</span>
+                  <ChevronDown size={16} className={`transform transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+                {isCategoryDropdownOpen && (
+                  <ul className="absolute top-full mt-1 w-full bg-white border rounded shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {CATEGORY_OPTIONS.map(category => (
+                      <li key={category} className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-black" onClick={() => handleCategorySelect(category)}>
+                        {category}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </Field>
+
             <Field label="งบประมาณ">
               <input type="text" value={projectInfo.budget} onChange={e => handleProjectChange('budget', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
             </Field>
@@ -259,8 +285,8 @@ export default function AddProject() {
             </Field>
 
             <div className="flex space-x-2">
-              <button onClick={handleSave} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center"><Save size={18} className="mr-2" /> บันทึก</button>
-              <button onClick={() => navigateTo('/Admin/Site')} className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md flex items-center"><X size={18} className="mr-2" /> ยกเลิก</button>
+              <button onClick={handleSave} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-600"><Save size={18} className="mr-2" /> บันทึก</button>
+              <button onClick={() => navigateTo('/Admin/Site')} className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md flex items-center hover:bg-gray-400"><X size={18} className="mr-2" /> ยกเลิก</button>
             </div>
           </div>
 
@@ -279,18 +305,18 @@ export default function AddProject() {
                 {activities.map(act => (
                   <tr key={act.id}>
                     <Td>{act.id}</Td>
-                    <Td><input type="text" value={act.description} onChange={e => handleActivityChange(act.id, 'description', e.target.value)} className="w-full p-2 border rounded-md" /></Td>
+                    <Td><input type="text" value={act.description} onChange={e => handleActivityChange(act.id, 'description', e.target.value)} className="w-full p-2 border rounded-md text-black" /></Td>
                     <Td className="flex space-x-2">
-                      <input type="date" value={act.startDate} onChange={e => handleActivityChange(act.id, 'startDate', e.target.value)} className="p-2 border rounded-md" />
-                      <input type="date" value={act.endDate} onChange={e => handleActivityChange(act.id, 'endDate', e.target.value)} className="p-2 border rounded-md" />
+                      <input type="date" value={act.startDate} onChange={e => handleActivityChange(act.id, 'startDate', e.target.value)} className="p-2 border rounded-md text-black" />
+                      <input type="date" value={act.endDate} onChange={e => handleActivityChange(act.id, 'endDate', e.target.value)} className="p-2 border rounded-md text-black" />
                     </Td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <div className="flex space-x-2 mt-2">
-              <button onClick={addActivity} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center"><Plus size={18} className="mr-1" /> เพิ่ม</button>
-              <button onClick={removeLastActivity} className="bg-red-400 text-white px-4 py-2 rounded-md flex items-center"><X size={18} className="mr-1" /> ลบ</button>
+              <button onClick={addActivity} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-600"><Plus size={18} className="mr-1" /> เพิ่ม</button>
+              <button onClick={removeLastActivity} className="bg-red-400 text-white px-4 py-2 rounded-md flex items-center hover:bg-red-500"><X size={18} className="mr-1" /> ลบ</button>
             </div>
           </div>
 
@@ -303,14 +329,14 @@ export default function AddProject() {
                 <input type="text" value={newDocument.name} onChange={e => setNewDocument(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded-md text-black" />
               </Field>
               <Field label="ไฟล์เอกสาร">
-                <label className="flex items-center justify-center p-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 text-gray-300">
+                <label className="flex items-center justify-center p-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 text-gray-600">
                   <Upload size={18} className="mr-2" />
                   {newDocument.file ? newDocument.file.name : 'Upload file'}
                   <input type="file" className="hidden" onChange={handleFileUpload} />
                 </label>
               </Field>
             </div>
-            <button onClick={addDocument} className="bg-blue-500 text-white px-4 py-2 rounded-md">บันทึกเอกสาร</button>
+            <button onClick={addDocument} className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">บันทึกเอกสาร</button>
 
             <table className="min-w-full divide-y divide-gray-200 mt-4">
               <thead>

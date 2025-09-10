@@ -35,71 +35,6 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-
-```
-development-projects-Backend
-├─ app
-│  ├─ Admin
-│  │  ├─ AddProject
-│  │  │  └─ page.tsx
-│  │  ├─ Details
-│  │  │  └─ page.tsx
-│  │  ├─ Editor
-│  │  │  └─ page.tsx
-│  │  ├─ Editortest
-│  │  │  └─ page.tsx
-│  │  ├─ Officer
-│  │  │  └─ page.tsx
-│  │  ├─ page.tsx
-│  │  ├─ Site
-│  │  │  └─ page.tsx
-│  │  ├─ Statistics
-│  │  │  └─ page.tsx
-│  │  └─ Trace
-│  │     └─ page.tsx
-│  ├─ Alluser
-│  │  ├─ Comment
-│  │  │  └─ page.tsx
-│  │  ├─ Home
-│  │  │  └─ page.tsx
-│  │  ├─ Login
-│  │  │  └─ page.tsx
-│  │  ├─ page.tsx
-│  │  ├─ Post
-│  │  │  └─ page.tsx
-│  │  ├─ Register
-│  │  │  └─ page.tsx
-│  │  └─ TestApi
-│  │     └─ page.tsx
-│  ├─ api
-│  │  ├─ projects
-│  │  │  └─ route.ts
-│  │  ├─ route.ts
-│  │  └─ saveProject
-│  │     └─ route.ts
-│  ├─ favicon.ico
-│  ├─ globals.css
-│  ├─ layout.tsx
-│  └─ page.tsx
-├─ eslint.config.mjs
-├─ next.config.ts
-├─ package-lock.json
-├─ package.json
-├─ postcss.config.mjs
-├─ public
-│  ├─ file.svg
-│  ├─ globe.svg
-│  ├─ images
-│  │  └─ image1.jpg
-│  ├─ next.svg
-│  ├─ vercel.svg
-│  └─ window.svg
-├─ README.md
-├─ src
-│  └─ supabase.ts
-└─ tsconfig.json
-
-```
 ```
 development-projects
 ├─ app
@@ -110,33 +45,24 @@ development-projects
 │  │  │  └─ page.tsx
 │  │  ├─ Editortest
 │  │  │  └─ page.tsx
-│  │  ├─ Officer
-│  │  │  └─ page.tsx
 │  │  ├─ page.tsx
 │  │  ├─ Site
 │  │  │  └─ page.tsx
 │  │  ├─ Statistics
 │  │  │  └─ page.tsx
 │  │  └─ Trace
-│  │     └─ page.tsx
+│  │     └─ [id]
+│  │        └─ page.tsx
 │  ├─ Alluser
-│  │  ├─ Comment
-│  │  │  └─ page.tsx
 │  │  ├─ Home
 │  │  │  └─ page.tsx
 │  │  ├─ Login
 │  │  │  └─ page.tsx
 │  │  ├─ page.tsx
-│  │  ├─ Post
-│  │  │  └─ page.tsx
-│  │  ├─ Register
-│  │  │  └─ page.tsx
 │  │  └─ TestApi
 │  │     └─ page.tsx
 │  ├─ api
 │  │  ├─ comments
-│  │  │  └─ route.ts
-│  │  ├─ projectpost
 │  │  │  └─ route.ts
 │  │  ├─ projects
 │  │  │  └─ route.ts
