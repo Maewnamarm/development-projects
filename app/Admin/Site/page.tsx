@@ -92,7 +92,7 @@ export default function HomeDashboard() {
   };
 
   const handleEditProject = (projectId: number) => {
-    router.push(`/Admin/EditProject/${projectId}`);
+    router.push(`/Admin/Editproject/${projectId}`);
   };
 
   const navigateTo = (path: string) => router.push(path);
