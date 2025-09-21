@@ -119,7 +119,7 @@ export default function TracePage() {
   };
 
   const fetchStatusUpdates = async () => {
-    const { data, error } = await supabase.from('statusUpdates').select('*').eq('project_id', projectId);
+    const { data, error } = await supabase.from('status').select('*').eq('project_id', projectId);
     if (error) {
       toast.error('โหลดสถานะอัปเดตไม่สำเร็จ');
     } else {
@@ -172,14 +172,99 @@ export default function TracePage() {
       toast.error("กรุณากรอกข้อมูลอย่างน้อยหนึ่งช่อง");
       return;
     }
-    toast.success("บันทึกข้อมูลเรียบร้อย (mock)");
-    // TODO: call API เพื่อบันทึกข้อมูลจริง
+  
+    const currentUserName = updateForm.reporter || "ไม่ระบุ"; 
+    const userRole = updateForm.role || "ไม่ระบุ";
+    const uploadedFileUrl = statusUpdateFile ? URL.createObjectURL(statusUpdateFile) : null;
+  
+    const res = await fetch('/api/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        project_id: projectId,
+        activity_id: selectedActivityId,
+        problem: updateForm.problem,
+        solving: updateForm.solving,
+        action: updateForm.action,
+        reporter: currentUserName,
+        role: userRole,
+        picture: uploadedFileUrl,
+      }),
+    });
+  
+    const result = await res.json();
+  
+    if (res.ok) {
+      toast.success("บันทึกสถานะเรียบร้อย");
+      setStatusUpdates(prev => [...prev, result]);
+      setUpdateForm({
+        problem: '',
+        solving: '',
+        action: '',
+        reporter: '',
+        role: '',
+      });
+      setStatusUpdateFile(null);
+      setSelectedActivityId(null);
+    } else {
+      toast.error(result.error || "เกิดข้อผิดพลาด");
+    }
   };
+  
 
-  // ดึง StatusUpdate ตาม Activity
-  const getActivityStatusUpdates = (activityId: number) => {
-    return statusUpdates.filter(update => update.activity_id === activityId);
-  };
+// ดึง StatusUpdate ตาม Activity
+const getActivityStatusUpdates = (activityId: number) => {
+  return statusUpdates.filter(update => update.activity_id === activityId);
+};
+
+const handleAddStatus = async () => {
+  if (!updateForm.action && !updateForm.problem && !updateForm.solving) {
+    toast.error("กรุณากรอกข้อมูลอย่างน้อยหนึ่งช่อง");
+    return;
+  }
+
+  // สมมติว่าคุณมี current user และ role
+  const currentUserName = updateForm.reporter || "ไม่ระบุ"; 
+  const userRole = updateForm.role || "ไม่ระบุ";
+  const uploadedFileUrl = statusUpdateFile ? URL.createObjectURL(statusUpdateFile) : null;
+
+  const res = await fetch('/api/status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      project_id: projectId,
+      activity_id: selectedActivityId, // อัปเดตตามกิจกรรม
+      problem: updateForm.problem,
+      solving: updateForm.solving,
+      action: updateForm.action,
+      reporter: currentUserName,
+      role: userRole,
+      picture: uploadedFileUrl,
+    }),
+  });
+
+  const result = await res.json();
+  if (res.ok) {
+    toast.success("บันทึกสถานะเรียบร้อย");
+    // อัปเดต local state เพื่อให้หน้า refresh ข้อมูลทันที
+    setStatusUpdates(prev => [...prev, result]);
+    setUpdateForm({
+      problem: '',
+      solving: '',
+      action: '',
+      reporter: '',
+      role: '',
+    });
+    setStatusUpdateFile(null);
+    setSelectedActivityId(null);
+  } else {
+    toast.error(result.error || "เกิดข้อผิดพลาด");
+    console.error('เกิดข้อผิดพลาด:', result.error);
+  }
+};
+
+
+  
 
 
   return (
@@ -282,7 +367,7 @@ export default function TracePage() {
                 <div className="space-y-2">
                     <label className="block text-gray-700">เลือกกิจกรรม (ไม่บังคับ)</label>
                     <select 
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                       value={selectedActivityId || ''}
                       onChange={(e) => setSelectedActivityId(e.target.value ? parseInt(e.target.value) : null)}
                     >
@@ -297,7 +382,7 @@ export default function TracePage() {
                 <div className="space-y-2">
                     <label className="block text-gray-700">กิจกรรม/รายละเอียด</label>
                     <textarea 
-                      className="w-full p-2 border border-gray-300 rounded-md" 
+                      className="w-full p-2 border border-gray-300 rounded-md text-black" 
                       rows={2} 
                       value={updateForm.action} 
                       onChange={(e) => setUpdateForm({ ...updateForm, action: e.target.value })}
@@ -307,7 +392,7 @@ export default function TracePage() {
                     <div className="space-y-2">
                       <label className="block text-gray-700">ปัญหา</label>
                       <textarea 
-                        className="w-full p-2 border border-gray-300 rounded-md" 
+                        className="w-full p-2 border border-gray-300 rounded-md text-black" 
                         rows={2} 
                         value={updateForm.problem} 
                         onChange={(e) => setUpdateForm({ ...updateForm, problem: e.target.value })}
@@ -316,7 +401,7 @@ export default function TracePage() {
                     <div className="space-y-2">
                       <label className="block text-gray-700">แนวทางการแก้ไข</label>
                       <textarea 
-                        className="w-full p-2 border border-gray-300 rounded-md" 
+                        className="w-full p-2 border border-gray-300 rounded-md text-black" 
                         rows={2} 
                         value={updateForm.solving} 
                         onChange={(e) => setUpdateForm({ ...updateForm, solving: e.target.value })}
@@ -328,7 +413,7 @@ export default function TracePage() {
                         <label className="block text-gray-700">ผู้บันทึกข้อมูล</label>
                         <input 
                           type="text" 
-                          className="w-full p-2 border border-gray-300 rounded-md" 
+                          className="w-full p-2 border border-gray-300 rounded-md text-black" 
                           value={updateForm.reporter} 
                           onChange={(e) => setUpdateForm({ ...updateForm, reporter: e.target.value })} 
                         />
@@ -337,7 +422,7 @@ export default function TracePage() {
                         <label className="block text-gray-700">ตำแหน่ง</label>
                         <input 
                           type="text" 
-                          className="w-full p-2 border border-gray-300 rounded-md" 
+                          className="w-full p-2 border border-gray-300 rounded-md text-black" 
                           value={updateForm.role} 
                           onChange={(e) => setUpdateForm({ ...updateForm, role: e.target.value })} 
                         />
