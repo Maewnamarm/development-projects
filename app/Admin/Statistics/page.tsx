@@ -4,6 +4,7 @@ import { ChevronDown, Home, LogOut, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import Cookies from 'js-cookie';
 
 type Project = {
   id: number;
@@ -64,10 +65,11 @@ export default function StatisticsDashboard() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const token = Cookies.get('auth_token');
     const userData = localStorage.getItem('user_data');
     
     if (!token) {
+      console.log("Admin Site Guard: Token not found in cookies, redirecting.");
       router.replace('/');
       return;
     }
@@ -77,8 +79,15 @@ export default function StatisticsDashboard() {
         setUser(JSON.parse(userData));
       } catch (e) {
         console.error('Invalid user data in localStorage');
+        Cookies.remove('auth_token');
+        localStorage.clear();
+        router.replace('/');
       }
-    }
+    } else {
+        console.log("Admin Site Guard: User Data missing, redirecting.");
+        router.replace('/');
+        return;
+    }
 
     fetchProjects();
   }, [router]);

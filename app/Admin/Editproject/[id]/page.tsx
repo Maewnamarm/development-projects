@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
-import { ChevronDown, Save, X, Plus, Upload, Trash2 } from 'lucide-react';
+import { ChevronDown, Save, X, Plus, Upload, Trash2,LogOut } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -23,6 +23,7 @@ const nextId = (arr: any[]) => (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1)
 
 export default function EditProject() {
   const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { id } = useParams<{ id: string }>();
 
   const [loading, setLoading] = useState(true);
@@ -252,6 +253,41 @@ export default function EditProject() {
       toast.error("อัปเดตไม่สำเร็จ: " + err.message);
     }
   };
+  const handleLogout = async () => {
+    if (isLoggingOut) return; 
+    
+    setIsLoggingOut(true);
+    
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.ok) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        localStorage.removeItem('user_type');
+        localStorage.clear();
+        
+        window.location.href = '/';
+      } else {
+        console.error('Logout failed:', data.message);
+        localStorage.clear();
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      localStorage.clear();
+      window.location.href = '/';
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   if (loading) return <div className="p-6">⏳ กำลังโหลดข้อมูล...</div>;
 
@@ -286,7 +322,13 @@ export default function EditProject() {
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Site')}>โครงการทั้งหมด</li>
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>เพิ่มโครงการ</li>
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>สถิติ</li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>ออกจากระบบ</li>
+                <li 
+                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  <span>{isLoggingOut ? 'กำลังออก...' : 'ออกจากระบบ'}</span>
+                </li>
               </ul>
             )}
           </div>

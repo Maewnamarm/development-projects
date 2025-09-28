@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { ChevronDown, Edit, Eye, Home, LogOut, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Cookies from 'js-cookie';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -57,10 +58,11 @@ export default function HomeDashboard() {
 
   useEffect(() => {
 
-    const token = localStorage.getItem('auth_token');
+    const token = Cookies.get('auth_token');
     const userData = localStorage.getItem('user_data');
     
     if (!token) {
+      console.log("Admin Site Guard: Token not found in cookies, redirecting.");
       router.replace('/');
       return;
     }
@@ -70,8 +72,15 @@ export default function HomeDashboard() {
         setUser(JSON.parse(userData));
       } catch (e) {
         console.error('Invalid user data in localStorage');
+        Cookies.remove('auth_token');
+        localStorage.clear();
+        router.replace('/');
       }
-    }
+    } else {
+        console.log("Admin Site Guard: User Data missing, redirecting.");
+        router.replace('/');
+        return;
+    }
 
     const fetchProjects = async () => {
       const res = await fetch('/api/projects');

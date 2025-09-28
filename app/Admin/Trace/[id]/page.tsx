@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@supabase/supabase-js';
-import { ChevronDown, Home, Search, Upload } from 'lucide-react';
+import { ChevronDown, Home, Search, Upload, LogOut } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation'; // ✅ ใช้ params จาก URL
 import React, { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
@@ -15,7 +15,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Interfaces
 interface Activity {
   id: number;
-  description: string;
+  description: string; 
   start_date: string;
   end_date: string;
   status: 'เสร็จสิ้น' | 'กำลังดำเนินการ' | 'ระงับ';
@@ -50,8 +50,9 @@ interface Project {
 
 export default function TracePage() {
   const router = useRouter();
-  const params = useParams(); // ✅ ดึง params
-  const projectId = Number(params.id); // ✅ ใช้ id จาก URL
+  const params = useParams(); 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const projectId = Number(params.id); 
 
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [project, setProject] = useState<Project | null>(null);
@@ -212,7 +213,6 @@ export default function TracePage() {
   };
   
 
-// ดึง StatusUpdate ตาม Activity
 const getActivityStatusUpdates = (activityId: number) => {
   return statusUpdates.filter(update => update.activity_id === activityId);
 };
@@ -223,7 +223,6 @@ const handleAddStatus = async () => {
     return;
   }
 
-  // สมมติว่าคุณมี current user และ role
   const currentUserName = updateForm.reporter || "ไม่ระบุ"; 
   const userRole = updateForm.role || "ไม่ระบุ";
   const uploadedFileUrl = statusUpdateFile ? URL.createObjectURL(statusUpdateFile) : null;
@@ -233,7 +232,7 @@ const handleAddStatus = async () => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       project_id: projectId,
-      activity_id: selectedActivityId, // อัปเดตตามกิจกรรม
+      activity_id: selectedActivityId, 
       problem: updateForm.problem,
       solving: updateForm.solving,
       action: updateForm.action,
@@ -246,7 +245,6 @@ const handleAddStatus = async () => {
   const result = await res.json();
   if (res.ok) {
     toast.success("บันทึกสถานะเรียบร้อย");
-    // อัปเดต local state เพื่อให้หน้า refresh ข้อมูลทันที
     setStatusUpdates(prev => [...prev, result]);
     setUpdateForm({
       problem: '',
@@ -262,10 +260,41 @@ const handleAddStatus = async () => {
     console.error('เกิดข้อผิดพลาด:', result.error);
   }
 };
-
-
+const handleLogout = async () => {
+  if (isLoggingOut) return; 
   
+  setIsLoggingOut(true);
+  
+  try {
+    const response = await fetch('/api/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
+    const data = await response.json();
+
+    if (data.ok) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      localStorage.removeItem('user_type');
+      localStorage.clear();
+      
+      window.location.href = '/';
+    } else {
+      console.error('Logout failed:', data.message);
+      localStorage.clear();
+      window.location.href = '/';
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+    localStorage.clear();
+    window.location.href = '/';
+  } finally {
+    setIsLoggingOut(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-100 font-inter flex flex-col">
@@ -317,7 +346,13 @@ const handleAddStatus = async () => {
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Site')}>โครงการทั้งหมด</li>
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>เพิ่มโครงการ</li>
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Statistics')}>สถิติ</li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Logout')}>ออกจากระบบ</li>
+                <li 
+                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  <span>{isLoggingOut ? 'กำลังออก...' : 'ออกจากระบบ'}</span>
+                </li>
               </ul>
             )}
           </div>
