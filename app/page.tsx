@@ -42,7 +42,7 @@ const LoginPage: React.FC = () => {
         body: JSON.stringify({ username, password }),
       });
     console.log(res)
-      let payload: any = null;
+      let payload = null;
       const ctype = res.headers.get('content-type') || '';
       if (ctype.includes('application/json')) {
         payload = await res.json().catch(() => null);

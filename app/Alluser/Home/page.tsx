@@ -5,6 +5,13 @@ import { ChevronDown, Eye, FileText, Home, LogOut, MessageSquare, Search, XCircl
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+// === NEW INTERFACE FOR USER DATA ===
+interface UserType {
+  email: string;
+  // Add other properties if they exist in user_data, e.g., name: string;
+}
+// ===================================
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -62,7 +69,9 @@ export default function HomeDashboard() {
   const [newComment, setNewComment] = useState('');
   const [commenterName, setCommenterName] = useState('');
   const [projectComments, setProjectComments] = useState<{[key: number]: Comment[]}>({});
-  const [user, setUser] = useState<any>(null);
+  
+  // FIX 1: Specify a type for 'user' (using the new UserType interface)
+  const [user, setUser] = useState<UserType | null>(null); 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
@@ -77,33 +86,35 @@ export default function HomeDashboard() {
     
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
+        // The parsed object must conform to the UserType interface
+        setUser(JSON.parse(userData) as UserType); 
+      // FIX 2: Replace 'e' with '_e' to suppress the unused variable error
+      } catch (_e) {
         console.error('Invalid user data in localStorage');
       }
     }
 
     const fetchProjects = async () => {
-  try { 
-    const { data, error } = await supabase
-      .from("projects")
-      .select(`*, activities(*), documents(*)`)
-      .order("created_at", { ascending: false });
+    try { 
+      const { data, error } = await supabase
+        .from("projects")
+        .select(`*, activities(*), documents(*)`)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error('Supabase error:', error);
-      return;
-    }
+      if (error) {
+        console.error('Supabase error:', error);
+        return;
+      }
 
-    if (data) {
-      setProjects(data);
+      if (data) {
+        setProjects(data as Project[]); // Add type assertion for safety
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
     }
-  } catch (error) {
-    console.error('Error fetching projects:', error);
-  }
     };
     fetchProjects();
-  },  [router]);
+  }, [router]);
 
   const handleLogout = async () => {
     if (isLoggingOut) return; 
@@ -175,9 +186,10 @@ export default function HomeDashboard() {
       const res = await fetch(`/api/comment?project_id=${projectId}`);
       if (res.ok) {
         const data = await res.json();
+        // FIX 3: Use type assertion for 'c' which comes from the API
         setProjectComments(prev => ({
           ...prev,
-          [projectId]: data.map((c: any) => ({
+          [projectId]: (data as { citizen_name: string, content: string, comm_date: string }[]).map((c) => ({
             user: c.citizen_name,
             text: c.content,
             date: new Date(c.comm_date).toLocaleDateString('th-TH')
@@ -280,6 +292,8 @@ export default function HomeDashboard() {
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
           <div className="bg-white p-2 rounded-full mr-3">
+            {/* Suppress Next.js Image Warning here as per user request not to change UI/Frontend */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
               alt="โลโก้"

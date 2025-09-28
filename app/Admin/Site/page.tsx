@@ -43,6 +43,13 @@ interface Project {
   documents?: Document[];
 }
 
+// ✅ Fix 1: Defined a clear type for the user object
+interface UserData {
+  email: string;
+  // Add other properties if they exist on your user object
+  // For example: id: string; user_type: string;
+}
+
 export default function HomeDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(true);
@@ -52,49 +59,53 @@ export default function HomeDashboard() {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ทั้งหมด');
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [user, setUser] = useState<any>(null);
+  // ✅ Fix 1: Use 'UserData | null' instead of 'any'
+  const [user, setUser] = useState<UserData | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-
     const token = Cookies.get('auth_token');
     const userData = localStorage.getItem('user_data');
-    
+
     if (!token) {
-      console.log("Admin Site Guard: Token not found in cookies, redirecting.");
+      console.log('Admin Site Guard: Token not found in cookies, redirecting.');
       router.replace('/');
       return;
     }
-    
+
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error('Invalid user data in localStorage');
+        // Corrected: Cast the parsed data to UserData
+        setUser(JSON.parse(userData) as UserData);
+      } catch (error: unknown) { // ✅ Fix 2: Explicitly type catch variable as 'unknown'
+        // This resolves the lint warning/error about an unused catch variable if 'error' is not used, 
+        // but here it is used for logging.
+        console.error('Invalid user data in localStorage', error);
         Cookies.remove('auth_token');
-        localStorage.clear();
-        router.replace('/');
+        localStorage.clear();
+        router.replace('/');
       }
     } else {
-        console.log("Admin Site Guard: User Data missing, redirecting.");
-        router.replace('/');
-        return;
-    }
+      console.log('Admin Site Guard: User Data missing, redirecting.');
+      router.replace('/');
+      return;
+    }
 
     const fetchProjects = async () => {
+      // NOTE: No changes needed in fetchProjects as fetch() returns a standard Response
       const res = await fetch('/api/projects');
-      const data = await res.json();
+      const data: Project[] = await res.json();
       setProjects(data);
     };
     fetchProjects();
   }, [router]);
 
   const handleLogout = async () => {
-    if (isLoggingOut) return; 
-    
+    if (isLoggingOut) return;
+
     setIsLoggingOut(true);
-    
+
     try {
       const response = await fetch('/api/logout', {
         method: 'POST',
@@ -103,21 +114,23 @@ export default function HomeDashboard() {
         },
       });
 
+      // NOTE: The type of 'data' is inferred from response.json()
       const data = await response.json();
 
       if (data.ok) {
+        // Clearing multiple times is redundant but kept for robustness as per original logic's intent
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         localStorage.removeItem('user_type');
         localStorage.clear();
-        
+
         window.location.href = '/';
       } else {
         console.error('Logout failed:', data.message);
         localStorage.clear();
         window.location.href = '/';
       }
-    } catch (error) {
+    } catch (error: unknown) { // ✅ Standard practice to type catch as 'unknown'
       console.error('Logout error:', error);
       localStorage.clear();
       window.location.href = '/';
@@ -138,10 +151,13 @@ export default function HomeDashboard() {
     setIsSortByDateOpen(false);
 
     if (option === 'ใหม่ที่สุด') {
+      // Sort by descending created_at
       setProjects([...projects].sort((a, b) => (a.created_at! < b.created_at! ? 1 : -1)));
     } else if (option === 'เก่าที่สุด') {
+      // Sort by ascending created_at
       setProjects([...projects].sort((a, b) => (a.created_at! > b.created_at! ? 1 : -1)));
     }
+    // No action for 'ทั้งหมด' since sorting by date already provides an order
   };
 
   const toggleStatusFilter = () => {
@@ -178,14 +194,16 @@ export default function HomeDashboard() {
   };
 
   const filteredProjects = projects
-    .filter(project => 
+    .filter((project) =>
       selectedStatusFilter === 'ทั้งหมด' ? true : project.status === selectedStatusFilter
     )
-    .filter(project =>
-      searchTerm === '' ? true : 
-      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (project.location && project.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (project.responsible_person && project.responsible_person.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter((project) =>
+      searchTerm === ''
+        ? true
+        : project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (project.location && project.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (project.responsible_person &&
+            project.responsible_person.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
   return (
@@ -236,17 +254,40 @@ export default function HomeDashboard() {
         {/* Sidebar */}
         <aside className="w-64 bg-white p-4 shadow-lg min-h-[calc(100vh-64px)]">
           <div className="mb-6">
-            <div className="flex items-center justify-between p-3 bg-blue-100 rounded-md mb-2 cursor-pointer hover:bg-blue-200" onClick={toggleMenu}>
+            <div
+              className="flex items-center justify-between p-3 bg-blue-100 rounded-md mb-2 cursor-pointer hover:bg-blue-200"
+              onClick={toggleMenu}
+            >
               <span className="font-semibold text-gray-800">เมนู</span>
-              <ChevronDown className={`text-gray-600 transform transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} size={18} />
+              <ChevronDown
+                className={`text-gray-600 transform transition-transform duration-200 ${
+                  isMenuOpen ? 'rotate-180' : ''
+                }`}
+                size={18}
+              />
             </div>
             {isMenuOpen && (
               <ul className="space-y-1">
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Site')}>โครงการทั้งหมด</li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>เพิ่มโครงการ</li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Statistics')}>สถิติ</li>
-                <li 
-                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
+                <li
+                  className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+                  onClick={() => navigateTo('/Admin/Site')}
+                >
+                  โครงการทั้งหมด
+                </li>
+                <li
+                  className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+                  onClick={() => navigateTo('/Admin/AddProject')}
+                >
+                  เพิ่มโครงการ
+                </li>
+                <li
+                  className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+                  onClick={() => navigateTo('/Admin/Statistics')}
+                >
+                  สถิติ
+                </li>
+                <li
+                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2"
                   onClick={handleLogout}
                 >
                   <LogOut size={16} />
@@ -323,7 +364,12 @@ export default function HomeDashboard() {
                   {isStatusFilterOpen && (
                     <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
                       <div className="py-1">
-                        {['ระงับ', 'เสร็จสิ้น', 'กำลังดำเนินการ', 'ทั้งหมด'].map((option) => (
+                        {[
+                          'ระงับ',
+                          'เสร็จสิ้น',
+                          'กำลังดำเนินการ',
+                          'ทั้งหมด',
+                        ].map((option) => (
                           <a
                             key={option}
                             href="#"
@@ -394,7 +440,8 @@ export default function HomeDashboard() {
                           <span className="font-semibold">รหัสโครงการ:</span> {project.code || '-'}
                         </p>
                         <p className="text-sm text-gray-600">
-                          <span className="font-semibold">หน่วยงานรับผิดชอบ:</span> {project.department || '-'}
+                          <span className="font-semibold">หน่วยงานรับผิดชอบ:</span>{' '}
+                          {project.department || '-'}
                         </p>
                         <p className="text-sm text-gray-600">
                           <span className="font-semibold">สถานที่:</span> {project.location || '-'}
@@ -403,13 +450,15 @@ export default function HomeDashboard() {
                           <span className="font-semibold">งบประมาณ:</span> {project.budget ?? '-'} บาท
                         </p>
                         <p className="text-sm text-gray-600">
-                          <span className="font-semibold">ผู้รับผิดชอบ:</span> {project.responsible_person || '-'}
+                          <span className="font-semibold">ผู้รับผิดชอบ:</span>{' '}
+                          {project.responsible_person || '-'}
                         </p>
                         <p className="text-sm text-gray-600">
                           <span className="font-semibold">ติดต่อ:</span> {project.contact_info || '-'}
                         </p>
                         <p className="text-sm text-gray-600">
-                          <span className="font-semibold">วัตถุประสงค์:</span> {project.objective || '-'}
+                          <span className="font-semibold">วัตถุประสงค์:</span>{' '}
+                          {project.objective || '-'}
                         </p>
 
                         {/* Activities */}
