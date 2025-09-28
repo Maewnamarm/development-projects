@@ -3,8 +3,8 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
 import tseslint from "@typescript-eslint/eslint-plugin";
-import nextPlugin from "@next/eslint-plugin-next"; 
-import path from "path"; // ต้อง import 'path' เพื่อใช้ path.resolve
+import path from "path";
+// ไม่ต้อง import nextPlugin เพราะจะใช้ compat.extends("next/core-web-vitals")
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,41 +14,34 @@ const compat = new FlatCompat({
   resolvePluginsRelativeTo: __dirname,
 });
 
-export default tseslint.config(
-  // 1. นำเข้า Rules ที่แนะนำของ Next.js และ TypeScript ผ่าน FlatCompat
-  //    เพื่อให้มั่นใจว่าโครงสร้าง config ภายในทำงานถูกต้อง
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+// ใช้ FlatCompat ในการรวม configs และนำเข้า FlatConfig Array
+export default [
+  // 1. นำเข้า configs ดั้งเดิมของ Next.js และ TypeScript
+  //    'next/core-web-vitals' รวม TypeScript Rules และ Next.js Rules ส่วนใหญ่ไว้แล้ว
+  ...compat.extends("next/core-web-vitals"),
 
-  // 2. นำเข้า Rules ที่ต้องการการตรวจสอบ Type
-  //    ใช้ tseslint.configs.recommendedTypeChecked โดยตรง (หากใช้งานได้)
-  //    หรือใช้วิธีการรวม configuration objects (ซึ่งปลอดภัยกว่า)
+  // 2. กำหนด Rules/Overrides สำหรับไฟล์ TypeScript โดยเฉพาะ
   {
     files: ["**/*.{ts,tsx}"],
     // กำหนด parser และ parserOptions สำหรับการตรวจสอบ Type
     languageOptions: {
-      parser: tseslint.parser,
+      // ใช้ tseslint.parser เพื่อให้มั่นใจว่าใช้ TypeScript Parser
+      parser: tseslint.parser, 
       parserOptions: {
-        // ใช้ path.resolve เพื่อให้แน่ใจว่า path ไปที่ tsconfig.json ถูกต้อง
+        // ใช้ path.resolve เพื่อให้มั่นใจว่า path ถูกต้อง
         project: [path.resolve(__dirname, "./tsconfig.json")],
         tsconfigRootDir: __dirname,
       },
     },
-  },
-  
-  // 3. กำหนด Rules ที่กำหนดเอง (Overrides)
-  {
-    files: ["**/*.{ts,tsx}"],
-    plugins: {
-      "@next/next": nextPlugin, // อาจไม่จำเป็นต้องระบุตรงนี้ถ้า compat.extends ทำงานแล้ว
-    },
+    // 3. กำหนด Rules ที่กำหนดเอง (Overrides)
     rules: {
-      // **สำคัญ:** หากคุณต้องการให้มี rules ของ tseslint.configs.recommendedTypeChecked
-      // และยังไม่สามารถใช้ Spread ได้ ให้พิจารณาว่า rules ของ Next.js ก็ครอบคลุม TypeScript ด้วย
-      
       // Override Rules ของคุณ
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "off",
-      "@next/next/no-img-element": "warn",
+      
+      // Rules ของ Next.js จะถูกจัดการโดย compat.extends("next/core-web-vitals")
+      // แต่คุณสามารถ Override ได้ตรงนี้
+      "@next/next/no-img-element": "warn", 
     },
   }
-);
+];
