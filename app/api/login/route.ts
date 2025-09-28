@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     }
 
 
-    const { passwordhash: _passwordhash, ...userSafeData } = userData;
+    const { passwordhash: _, ...userSafeData } = userData;
 
     const { error: upErr } = await supabase
       .from('officer')
