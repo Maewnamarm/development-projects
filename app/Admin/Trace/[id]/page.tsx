@@ -2,10 +2,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { ChevronDown, Home, Search, Upload, LogOut } from 'lucide-react';
-import { useRouter, useParams } from 'next/navigation'; // ✅ ใช้ params จาก URL
-import React, { useEffect, useState } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import React, { useEffect, useState, useCallback } from 'react'; // ✅ Import useCallback
 import toast, { Toaster } from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid'; // ❌ REMOVED: uuidv4 is not used
 
 // Supabase configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'your-supabase-url';
@@ -15,7 +15,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // Interfaces
 interface Activity {
   id: number;
-  description: string; 
+  description: string;
   start_date: string;
   end_date: string;
   status: 'เสร็จสิ้น' | 'กำลังดำเนินการ' | 'ระงับ';
@@ -48,17 +48,21 @@ interface Project {
   end_date: string;
 }
 
+// Type สำหรับข้อมูลดิบที่ได้จาก Supabase ก่อนจัดรูปแบบวันที่
+type RawActivity = Omit<Activity, 'start_date' | 'end_date'> & { start_date: string | null; end_date: string | null };
+type RawStatusUpdate = Omit<StatusUpdate, 'stat_date'> & { stat_date: string | null };
+
 export default function TracePage() {
   const router = useRouter();
-  const params = useParams(); 
+  const params = useParams();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const projectId = Number(params.id); 
+  const projectId = Number(params.id);
 
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [project, setProject] = useState<Project | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [statusUpdates, setStatusUpdates] = useState<StatusUpdate[]>([]);
-  
+
   const [updateForm, setUpdateForm] = useState({
     problem: '',
     solving: '',
@@ -68,13 +72,15 @@ export default function TracePage() {
   });
 
   const [statusUpdateFile, setStatusUpdateFile] = useState<File | null>(null);
-  const [progress, setProgress] = useState<number>(0);
+  // ❌ REMOVED: progress is assigned but never used.
+  // const [progress, setProgress] = useState<number>(0); 
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
   const [showActivityStatus, setShowActivityStatus] = useState<{ [key: number]: boolean }>({});
-  
+
   const [isProjectStatusDropdownOpen, setIsProjectStatusDropdownOpen] = useState(false);
   const [selectedProjectStatus, setSelectedProjectStatus] = useState('กำลังดำเนินการ');
-  const [isActivityStatusDropdownOpen, setIsActivityStatusDropdownOpen] = useState<{ [key: number]: boolean }>({});
+  // ❌ REMOVED: isActivityStatusDropdownOpen & setIsActivityStatusDropdownOpen are unused.
+  // const [isActivityStatusDropdownOpen, setIsActivityStatusDropdownOpen] = useState<{ [key: number]: boolean }>({});
 
   const statusOptions = [
     { status: 'กำลังดำเนินการ', color: 'bg-yellow-200 text-yellow-800 border-yellow-300', dot: 'bg-yellow-500' },
@@ -82,62 +88,73 @@ export default function TracePage() {
     { status: 'ระงับ', color: 'bg-red-200 text-red-800 border-red-300', dot: 'bg-red-500' },
   ];
 
-  useEffect(() => {
-    if (projectId) {
-      fetchProjectData();
-      fetchActivities();
-      fetchStatusUpdates();
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    calculateProgress();
-  }, [activities]);
-
-  const fetchProjectData = async () => {
+  // ✅ Wrap fetch functions in useCallback to stabilize dependencies
+  const fetchProjectData = useCallback(async () => {
     const { data, error } = await supabase.from('projects').select('*').eq('id', projectId).single();
     if (error) {
       toast.error('โหลดโครงการไม่สำเร็จ');
     } else if (data) {
-      setProject(data);
-      setSelectedProjectStatus(data.status || 'กำลังดำเนินการ');
+      // ✅ Explicitly cast data to Project
+      setProject(data as Project);
+      setSelectedProjectStatus((data as Project).status || 'กำลังดำเนินการ');
     }
-  };
+  }, [projectId]);
 
-  const fetchActivities = async () => {
+  // ✅ Wrap fetch functions in useCallback to stabilize dependencies
+  const fetchActivities = useCallback(async () => {
     const { data, error } = await supabase.from('activities').select('*').eq('project_id', projectId);
     if (error) {
       toast.error('โหลดกิจกรรมไม่สำเร็จ');
     } else {
+      // ✅ Use RawActivity type instead of 'any'
       setActivities(
-        (data || []).map((a: any) => ({
+        (data || []).map((a: RawActivity) => ({
           ...a,
           start_date: a.start_date ? new Date(a.start_date).toLocaleDateString('th-TH') : '',
           end_date: a.end_date ? new Date(a.end_date).toLocaleDateString('th-TH') : '',
         }))
       );
     }
-  };
+  }, [projectId]);
 
-  const fetchStatusUpdates = async () => {
+  // ✅ Wrap fetch functions in useCallback to stabilize dependencies
+  const fetchStatusUpdates = useCallback(async () => {
     const { data, error } = await supabase.from('status').select('*').eq('project_id', projectId);
     if (error) {
       toast.error('โหลดสถานะอัปเดตไม่สำเร็จ');
     } else {
+      // ✅ Use RawStatusUpdate type instead of 'any'
       setStatusUpdates(
-        (data || []).map((u: any) => ({
+        (data || []).map((u: RawStatusUpdate) => ({
           ...u,
           stat_date: u.stat_date ? new Date(u.stat_date).toLocaleDateString('th-TH') : '',
         }))
       );
     }
-  };
+  }, [projectId]);
 
-  const calculateProgress = () => {
+  // ✅ Wrap calculateProgress in useCallback to stabilize dependency
+  const calculateProgress = useCallback(() => {
     const completed = activities.filter(activity => activity.status === 'เสร็จสิ้น').length;
     const total = activities.length;
-    setProgress(total > 0 ? (completed / total) * 100 : 0);
-  };
+    // ❌ setProgress() removed as progress state is removed
+    return total > 0 ? (completed / total) * 100 : 0;
+  }, [activities]);
+
+  // ✅ Fixed missing dependencies
+  useEffect(() => {
+    if (projectId) {
+      fetchProjectData();
+      fetchActivities();
+      fetchStatusUpdates();
+    }
+  }, [projectId, fetchProjectData, fetchActivities, fetchStatusUpdates]);
+
+  // ✅ Fixed missing dependency (calculateProgress)
+  useEffect(() => {
+    calculateProgress();
+  }, [activities, calculateProgress]);
+
   // ใช้ navigate
   const navigateTo = (path: string) => {
     router.push(path);
@@ -173,11 +190,13 @@ export default function TracePage() {
       toast.error("กรุณากรอกข้อมูลอย่างน้อยหนึ่งช่อง");
       return;
     }
-  
-    const currentUserName = updateForm.reporter || "ไม่ระบุ"; 
+
+    const currentUserName = updateForm.reporter || "ไม่ระบุ";
     const userRole = updateForm.role || "ไม่ระบุ";
+    // NOTE: In a real app, you should upload statusUpdateFile to a storage service (like Supabase Storage) here
+    // and use the returned URL, not URL.createObjectURL, which is only client-side temporary.
     const uploadedFileUrl = statusUpdateFile ? URL.createObjectURL(statusUpdateFile) : null;
-  
+
     const res = await fetch('/api/status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -192,12 +211,13 @@ export default function TracePage() {
         picture: uploadedFileUrl,
       }),
     });
-  
+
     const result = await res.json();
-  
+
     if (res.ok) {
       toast.success("บันทึกสถานะเรียบร้อย");
-      setStatusUpdates(prev => [...prev, result]);
+      // ✅ Cast result to StatusUpdate
+      setStatusUpdates(prev => [...prev, result as StatusUpdate]);
       setUpdateForm({
         problem: '',
         solving: '',
@@ -211,60 +231,24 @@ export default function TracePage() {
       toast.error(result.error || "เกิดข้อผิดพลาด");
     }
   };
-  
+
 
 const getActivityStatusUpdates = (activityId: number) => {
   return statusUpdates.filter(update => update.activity_id === activityId);
 };
 
+// ❌ REMOVED: handleAddStatus function was a duplicate and unused.
+/*
 const handleAddStatus = async () => {
-  if (!updateForm.action && !updateForm.problem && !updateForm.solving) {
-    toast.error("กรุณากรอกข้อมูลอย่างน้อยหนึ่งช่อง");
-    return;
-  }
-
-  const currentUserName = updateForm.reporter || "ไม่ระบุ"; 
-  const userRole = updateForm.role || "ไม่ระบุ";
-  const uploadedFileUrl = statusUpdateFile ? URL.createObjectURL(statusUpdateFile) : null;
-
-  const res = await fetch('/api/status', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      project_id: projectId,
-      activity_id: selectedActivityId, 
-      problem: updateForm.problem,
-      solving: updateForm.solving,
-      action: updateForm.action,
-      reporter: currentUserName,
-      role: userRole,
-      picture: uploadedFileUrl,
-    }),
-  });
-
-  const result = await res.json();
-  if (res.ok) {
-    toast.success("บันทึกสถานะเรียบร้อย");
-    setStatusUpdates(prev => [...prev, result]);
-    setUpdateForm({
-      problem: '',
-      solving: '',
-      action: '',
-      reporter: '',
-      role: '',
-    });
-    setStatusUpdateFile(null);
-    setSelectedActivityId(null);
-  } else {
-    toast.error(result.error || "เกิดข้อผิดพลาด");
-    console.error('เกิดข้อผิดพลาด:', result.error);
-  }
+  // ... (duplicate logic)
 };
+*/
+
 const handleLogout = async () => {
-  if (isLoggingOut) return; 
-  
+  if (isLoggingOut) return;
+
   setIsLoggingOut(true);
-  
+
   try {
     const response = await fetch('/api/logout', {
       method: 'POST',
@@ -280,7 +264,7 @@ const handleLogout = async () => {
       localStorage.removeItem('user_data');
       localStorage.removeItem('user_type');
       localStorage.clear();
-      
+
       window.location.href = '/';
     } else {
       console.error('Logout failed:', data.message);
@@ -302,6 +286,7 @@ const handleLogout = async () => {
        <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
           <div className="bg-white p-2 rounded-full mr-3">
+            {/* Warning remains as per instruction: not to change UI/Front, so no change to <img> */}
             <img
               src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
               alt="เทศบาลตำบลปะโค Logo"
@@ -346,8 +331,8 @@ const handleLogout = async () => {
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Site')}>โครงการทั้งหมด</li>
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>เพิ่มโครงการ</li>
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Statistics')}>สถิติ</li>
-                <li 
-                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
+                <li
+                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2"
                   onClick={handleLogout}
                 >
                   <LogOut size={16} />
@@ -361,7 +346,7 @@ const handleLogout = async () => {
         <main className="flex-1 p-6 space-y-8 overflow-y-auto">
           <div className="bg-white p-6 rounded-lg shadow-md">
             {/* Project Status Section */}
-             <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-semibold text-gray-800">ติดตามสถานะโครงการ</h2>
               <div className="flex items-center">
                 <label htmlFor="status" className="mr-4 text-gray-700">สถานะ :</label>
@@ -389,7 +374,7 @@ const handleLogout = async () => {
                 )}
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 mb-6">
               <p><strong>ชื่อโครงการ:</strong> {project?.name || 'Loading...'}</p>
               <p><strong>รหัสโครงการ:</strong> {project?.code || 'Loading...'}</p>
@@ -399,9 +384,9 @@ const handleLogout = async () => {
             {/* Status Update Form */}
             <div className="space-y-4">
                <h3 className="text-xl font-semibold text-gray-800">อัปเดตสถานะโครงการ</h3>
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <label className="block text-gray-700">เลือกกิจกรรม (ไม่บังคับ)</label>
-                    <select 
+                    <select
                       className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                       value={selectedActivityId || ''}
                       onChange={(e) => setSelectedActivityId(e.target.value ? parseInt(e.target.value) : null)}
@@ -413,68 +398,68 @@ const handleLogout = async () => {
                         </option>
                       ))}
                     </select>
-                </div>
-                <div className="space-y-2">
+                  </div>
+                  <div className="space-y-2">
                     <label className="block text-gray-700">กิจกรรม/รายละเอียด</label>
-                    <textarea 
-                      className="w-full p-2 border border-gray-300 rounded-md text-black" 
-                      rows={2} 
-                      value={updateForm.action} 
+                    <textarea
+                      className="w-full p-2 border border-gray-300 rounded-md text-black"
+                      rows={2}
+                      value={updateForm.action}
                       onChange={(e) => setUpdateForm({ ...updateForm, action: e.target.value })}
                     />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="block text-gray-700">ปัญหา</label>
-                      <textarea 
-                        className="w-full p-2 border border-gray-300 rounded-md text-black" 
-                        rows={2} 
-                        value={updateForm.problem} 
+                      <textarea
+                        className="w-full p-2 border border-gray-300 rounded-md text-black"
+                        rows={2}
+                        value={updateForm.problem}
                         onChange={(e) => setUpdateForm({ ...updateForm, problem: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
                       <label className="block text-gray-700">แนวทางการแก้ไข</label>
-                      <textarea 
-                        className="w-full p-2 border border-gray-300 rounded-md text-black" 
-                        rows={2} 
-                        value={updateForm.solving} 
+                      <textarea
+                        className="w-full p-2 border border-gray-300 rounded-md text-black"
+                        rows={2}
+                        value={updateForm.solving}
                         onChange={(e) => setUpdateForm({ ...updateForm, solving: e.target.value })}
                       />
                     </div>
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="block text-gray-700">ผู้บันทึกข้อมูล</label>
-                        <input 
-                          type="text" 
-                          className="w-full p-2 border border-gray-300 rounded-md text-black" 
-                          value={updateForm.reporter} 
-                          onChange={(e) => setUpdateForm({ ...updateForm, reporter: e.target.value })} 
-                        />
+                  </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                          <label className="block text-gray-700">ผู้บันทึกข้อมูล</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border border-gray-300 rounded-md text-black"
+                            value={updateForm.reporter}
+                            onChange={(e) => setUpdateForm({ ...updateForm, reporter: e.target.value })}
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <label className="block text-gray-700">ตำแหน่ง</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border border-gray-300 rounded-md text-black"
+                            value={updateForm.role}
+                            onChange={(e) => setUpdateForm({ ...updateForm, role: e.target.value })}
+                          />
+                      </div>
                     </div>
                     <div className="space-y-2">
-                        <label className="block text-gray-700">ตำแหน่ง</label>
-                        <input 
-                          type="text" 
-                          className="w-full p-2 border border-gray-300 rounded-md text-black" 
-                          value={updateForm.role} 
-                          onChange={(e) => setUpdateForm({ ...updateForm, role: e.target.value })} 
-                        />
+                      <label className="block text-gray-700">รูปภาพ</label>
+                      <input type="file" id="image-upload" className="hidden" onChange={handleFileChange} accept="image/*" />
+                      <label htmlFor="image-upload" className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 cursor-pointer flex items-center w-fit">
+                          <Upload size={18} className="mr-2" />
+                          {statusUpdateFile ? 'เปลี่ยนรูปภาพ' : 'อัปโหลดรูปภาพ'}
+                      </label>
+                      {statusUpdateFile && <span className="text-sm text-gray-600 ml-3">{statusUpdateFile.name}</span>}
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <label className="block text-gray-700">รูปภาพ</label>
-                    <input type="file" id="image-upload" className="hidden" onChange={handleFileChange} accept="image/*" />
-                    <label htmlFor="image-upload" className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 cursor-pointer flex items-center w-fit">
-                        <Upload size={18} className="mr-2" /> 
-                        {statusUpdateFile ? 'เปลี่ยนรูปภาพ' : 'อัปโหลดรูปภาพ'}
-                    </label>
-                    {statusUpdateFile && <span className="text-sm text-gray-600 ml-3">{statusUpdateFile.name}</span>}
-                </div>
-                <div className="flex justify-end">
-                    <button onClick={handleUpdateFormSubmit} className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">บันทึก</button>
-                </div>
+                    <div className="flex justify-end">
+                      <button onClick={handleUpdateFormSubmit} className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">บันทึก</button>
+                    </div>
             </div>
 
             <hr className="my-6" />
@@ -521,6 +506,7 @@ const handleLogout = async () => {
                             </div>
                             {update.picture && (
                               <div className="mt-3">
+                                {/* Warning remains as per instruction: not to change UI/Front, so no change to <img> */}
                                 <img src={update.picture} alt={`Update image for ${update.stat_id}`} className="rounded-lg object-cover max-h-48" />
                               </div>
                             )}

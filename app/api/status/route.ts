@@ -53,8 +53,9 @@ export async function POST(req: Request) {
       if (error) throw error;
   
       return NextResponse.json({ message: 'บันทึกสำเร็จ', status: data });
-    } catch (err: any) {
-      return NextResponse.json({ error: err.message }, { status: 500 });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
   }
   

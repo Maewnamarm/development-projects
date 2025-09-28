@@ -1,18 +1,47 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// --- Custom Types for Strong Typing ---
+
+type ActivityData = {
+  description: string;
+  startDate: string;
+  endDate: string;
+};
+
+type DocumentUploadData = {
+  file?: string; // Base64 string
+  name: string;
+  type?: string;
+  isPublic?: boolean;
+};
+
+type DocumentRow = {
+  project_id: number;
+  name: string;
+  file_url: string;
+  is_public: boolean;
+};
+
+// --- Supabase and Utility Setup ---
+
 // สร้าง Supabase client (ใช้ Service Role Key)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ฟังก์ชัน safeNumber
-const safeNumber = (n: any) => {
+/**
+ * แปลงค่า input เป็นตัวเลขอย่างปลอดภัย หากไม่ใช่ตัวเลขจะคืนค่า null
+ * @param n ค่า input ที่อาจเป็น string, number, null, หรือ undefined
+ */
+const safeNumber = (n: unknown): number | null => {
   if (n === "" || n === null || n === undefined) return null;
   const num = Number(n);
   return isNaN(num) ? null : num;
 };
+
+// --- API Handler ---
 
 export async function POST(req: Request) {
   try {
@@ -30,8 +59,23 @@ export async function POST(req: Request) {
       budget,
       responsiblePerson,
       contactInfo,
-      activities,
-      documents, // [{ file (base64), name, type?, isPublic }]
+      activities, // ActivityData[]
+      documents, // DocumentUploadData[]
+    }: {
+      projName: string,
+      projCode: string,
+      department: string,
+      location: string,
+      startDate: string,
+      endDate: string,
+      objective: string,
+      status: string,
+      category: string,
+      budget: unknown,
+      responsiblePerson: string,
+      contactInfo: string,
+      activities?: ActivityData[],
+      documents?: DocumentUploadData[],
     } = body;
 
     // 1) Insert Project
@@ -53,15 +97,17 @@ export async function POST(req: Request) {
           contact_info: contactInfo,
         },
       ])
-      .select()
+      .select("id") // เลือกเฉพาะ ID ที่จำเป็นต้องใช้ต่อ
       .single();
 
     if (projectError) throw projectError;
-    const projectId = project.id;
+    // Note: Assuming 'id' is present and is a number, based on 'select("id")'
+    const projectId = project.id as number; 
 
     // 2) Insert Activities
     if (activities && activities.length > 0) {
-      const activityRows = activities.map((a: any) => ({
+      // Fix 2: ใช้ Type ActivityData ที่กำหนดไว้
+      const activityRows = activities.map((a: ActivityData) => ({ 
         project_id: projectId,
         description: a.description,
         start_date: a.startDate,
@@ -77,15 +123,23 @@ export async function POST(req: Request) {
 
     // 3) Upload Documents
     if (documents && documents.length > 0) {
-      const docRows: any[] = [];
+      // Fix 3: ใช้ Type DocumentRow[] ที่กำหนดไว้
+      const docRows: DocumentRow[] = []; 
 
       for (const d of documents) {
         if (!d.file) throw new Error(`เอกสาร ${d.name} ไม่มีไฟล์`);
       
-        const filePath = `project-files/${crypto.randomUUID()}-${d.name}`;
+        // สร้าง Buffer จาก base64
+        const fileBuffer = Buffer.from(d.file.replace(/^data:.+;base64,/, ''), "base64");
+        
+        // ใช้ crypto.randomUUID() แทนการใช้ crypto ใน Node.js runtime
+        // Note: Next.js 'crypto' in Node.js runtime is global but better to be explicit or use a library if available.
+        // Assuming global 'crypto' or 'node:crypto' is available in 'nodejs' runtime.
+        const filePath = `project-files/${crypto.randomUUID()}-${d.name}`; 
+
         const { error: uploadError } = await supabase.storage
           .from("project-files")
-          .upload(filePath, Buffer.from(d.file, "base64"), {
+          .upload(filePath, fileBuffer, {
             contentType: d.type || "application/octet-stream",
           });
       
@@ -111,9 +165,13 @@ export async function POST(req: Request) {
       { message: "Project and related data saved successfully" },
       { status: 200 }
     );
-  } catch (error: any) {
+  } catch (error) { // Fix 4: error is implicitly 'unknown'
+    const errorMessage = error instanceof Error ? 
+      error.message : 
+      "Internal Server Error: An unknown error occurred.";
+      
     return NextResponse.json(
-      { message: error.message || "Internal Server Error" },
+      { message: errorMessage },
       { status: 500 }
     );
   }

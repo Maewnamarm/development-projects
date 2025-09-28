@@ -1,14 +1,47 @@
 'use client';
 
-import { ChevronDown, Home, Plus, Save, Trash2, Upload, X, LogOut } from 'lucide-react';
+import { ChevronDown, Plus, Save, Trash2, Upload, X, LogOut } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import toast, { Toaster } from 'react-hot-toast';
+import Image from 'next/image'; // ต้อง Import Image จาก next/image
 
-// สร้าง Supabase client
+// --- Type Definitions สำหรับโปรเจกต์ (เพื่อแก้ปัญหา any) ---
+type Activity = {
+  id: number;
+  description: string;
+  startDate: string;
+  endDate: string;
+};
+
+type DocumentItem = {
+  id: number;
+  name: string;
+  file: string | File | null; // Base64 string หรือ File object
+  type: string;
+  isPublic: boolean;
+  fileUrl?: string; // สำหรับ URL ที่ถูกอัปโหลดแล้ว (ถ้ามี)
+};
+
+type ProjectInfo = {
+  projName: string;
+  projCode: string;
+  department: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  objective: string;
+  category: string;
+  budget: string;
+  responsiblePerson: string;
+  contactInfo: string;
+};
+
+// สร้าง Supabase client (ไม่จำเป็นต้องใช้ใน Component นี้ แต่เก็บไว้หากคุณต้องการใช้ client-side)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// ตัวแปร 'supabase' ถูกกำหนดค่าแต่ไม่ได้ใช้ใน AddProject จึงคอมเมนต์ไว้เพื่อแก้ Error: 'supabase' is assigned a value but never used.
+// const supabase = createClient(supabaseUrl, supabaseKey); 
 
 const STATUS_OPTIONS = [
   { status: 'กำลังดำเนินการ', color: 'bg-yellow-200 text-yellow-800 border-yellow-300', dot: 'bg-yellow-500' },
@@ -19,7 +52,9 @@ const STATUS_OPTIONS = [
 const PLACEHOLDER_LOGO = 'https://placehold.co/40x40/ffffff/000000?text=LOGO';
 
 const getStatusMeta = (status: string) => STATUS_OPTIONS.find((opt) => opt.status === status) || STATUS_OPTIONS[0];
-const nextId = (arr: any[]) => (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
+
+// แก้ไข nextId เพื่อรับ Array ที่เป็น Type ที่กำหนด
+const nextId = (arr: { id: number }[]) => (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
 
 export default function AddProject() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
@@ -27,15 +62,15 @@ export default function AddProject() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigateTo = (path: string) => { window.location.href = path; };
 
-  // --- safeNumber อยู่ใน scope ของ component ---
-  const safeNumber = (n: any) => {
+  // แก้ไข Type ของ safeNumber เพื่อแก้ Error: Unexpected any. Specify a different type.
+  const safeNumber = (n: string | number | null | undefined): number | null => {
     if (n === "" || n === null || n === undefined) return null;
     const num = Number(n);
     return isNaN(num) ? null : num;
   };
 
   /** Project Info */
-  const [projectInfo, setProjectInfo] = useState({
+  const [projectInfo, setProjectInfo] = useState<ProjectInfo>({
     projName: '',
     projCode: '',
     department: '',
@@ -49,21 +84,22 @@ export default function AddProject() {
     contactInfo: ''
   });
 
-  const handleProjectChange = (field: string, value: string) => {
+  const handleProjectChange = (field: keyof ProjectInfo, value: string) => {
     setProjectInfo(prev => ({ ...prev, [field]: value }));
   };
 
   /** Activities */
-  const [activities, setActivities] = useState([{ id: 1, description: '', startDate: '', endDate: '' }]);
+  const [activities, setActivities] = useState<Activity[]>([{ id: 1, description: '', startDate: '', endDate: '' }]);
   const addActivity = () => setActivities(prev => [...prev, { id: nextId(prev), description: '', startDate: '', endDate: '' }]);
   const removeLastActivity = () => setActivities(prev => prev.length > 0 ? prev.slice(0, -1) : prev);
-  const handleActivityChange = (id: number, field: string, value: string) => {
+  const handleActivityChange = (id: number, field: keyof Omit<Activity, 'id'>, value: string) => {
     setActivities(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
   };
 
   /** Documents */
   const [newDocument, setNewDocument] = useState<{ name: string; file: File | null }>({ name: '', file: null });
-  const [documents, setDocuments] = useState<any[]>([]);
+  // แก้ไข Type จาก any[] เป็น DocumentItem[]
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
 
   const handlePublicSelect = (id: number) => {
     setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, isPublic: !doc.isPublic } : doc));
@@ -80,6 +116,7 @@ export default function AddProject() {
     setNewDocument(prev => ({ ...prev, file }));
   };
 
+  // แก้ไข Type ของ err ใน catch block
   const addDocument = async () => {
     if (!newDocument.name || !newDocument.file) {
       toast.error("กรุณากรอกชื่อเอกสารและเลือกไฟล์ก่อนบันทึก");
@@ -96,7 +133,8 @@ export default function AddProject() {
           reader.onload = () => {
             const result = reader.result;
             if (!result) return reject("ไฟล์ว่าง");
-            resolve((result as string).split(",")[1]); // เอาเฉพาะ Base64
+            // result เป็น string แน่นอนเมื่ออ่านเป็น DataURL
+            resolve((result as string).split(",")[1]); 
           };
           reader.onerror = (err) => reject(err);
         });
@@ -111,19 +149,20 @@ export default function AddProject() {
           file: base64File,
           type: file.type,
           isPublic: false,
-        }
+        } as DocumentItem // กำหนด Type ให้ชัดเจน
       ]);
   
       setNewDocument({ name: "", file: null });
       toast.success("เพิ่มเอกสารเรียบร้อย");
-    } catch (err: any) {
-      toast.error("เกิดข้อผิดพลาดในการแปลงไฟล์: " + err);
+      // ล้างค่าใน input file
+      (document.getElementById('file-upload') as HTMLInputElement).value = '';
+
+    } catch (err: unknown) { // แก้ไข Type ของ catch block
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error("เกิดข้อผิดพลาดในการแปลงไฟล์: " + errorMessage);
     }
   };
   
-  
-  
-
   /** Status */
   const [selectedStatus, setSelectedStatus] = useState('กำลังดำเนินการ');
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
@@ -146,21 +185,25 @@ export default function AddProject() {
           budget: safeNumber(projectInfo.budget),
           status: selectedStatus,
           activities,
-          documents
+          documents // documents เป็น DocumentItem[] 
         }),
       });
 
-      const data = await response.json();
+      // แก้ไข Type ของ data ใน response.json()
+      const data: { message?: string, ok?: boolean } = await response.json(); 
       if (response.ok) {
         toast.success("บันทึกโครงการเรียบร้อย");
         setTimeout(() => navigateTo("/Admin/Site"), 1000);
       } else {
-        toast.error("บันทึกโครงการไม่สำเร็จ: " + data.message);
+        toast.error("บันทึกโครงการไม่สำเร็จ: " + (data.message || "Unknown Error"));
       }
-    } catch (error: any) {
-      toast.error("เกิดข้อผิดพลาด: " + error.message);
+    } catch (error: unknown) { // แก้ไข Type ของ catch block
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      toast.error("เกิดข้อผิดพลาด: " + errorMessage);
     }
   };
+
+  // แก้ไข Type ของ data ใน response.json()
   const handleLogout = async () => {
     if (isLoggingOut) return; 
     
@@ -174,7 +217,7 @@ export default function AddProject() {
         },
       });
 
-      const data = await response.json();
+      const data: { message?: string, ok?: boolean } = await response.json();
 
       if (data.ok) {
         localStorage.removeItem('auth_token');
@@ -204,7 +247,14 @@ export default function AddProject() {
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
           <div className="bg-white p-2 rounded-full mr-3">
-            <img src={PLACEHOLDER_LOGO} alt="Logo" className="h-10 w-10 rounded-full" />
+            {/* แก้ไขเป็น Image Component */}
+            <Image 
+                src={PLACEHOLDER_LOGO} 
+                alt="Logo" 
+                className="h-10 w-10 rounded-full" 
+                width={40} 
+                height={40}
+            />
           </div>
           <div>
             <h1 className="text-xl font-bold">การจัดการโครงการ</h1>
@@ -225,7 +275,7 @@ export default function AddProject() {
               <ul className="space-y-1">
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Site')}>โครงการทั้งหมด</li>
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>เพิ่มโครงการ</li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>สถิติ</li>
+                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Statistics')}>สถิติ</li> {/* แก้ไขพาธที่ถูกต้อง */}
                 <li 
                   className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
                   onClick={handleLogout}
@@ -312,17 +362,17 @@ export default function AddProject() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
-                  <Th>ลำดับ</Th>
-                  <Th>รายละเอียด</Th>
-                  <Th>ระยะเวลา</Th>
+                  <Th center={false}>ลำดับ</Th>
+                  <Th center={false}>รายละเอียด</Th>
+                  <Th center={false}>ระยะเวลา</Th>
                 </tr>
               </thead>
               <tbody>
                 {activities.map(act => (
                   <tr key={act.id}>
-                    <Td>{act.id}</Td>
-                    <Td><input type="text" value={act.description} onChange={e => handleActivityChange(act.id, 'description', e.target.value)} className="w-full p-2 border rounded-md" /></Td>
-                    <Td className="flex space-x-2">
+                    <Td center={false}>{act.id}</Td>
+                    <Td center={false}><input type="text" value={act.description} onChange={e => handleActivityChange(act.id, 'description', e.target.value)} className="w-full p-2 border rounded-md" /></Td>
+                    <Td center={false} className="flex space-x-2">
                       <input type="date" value={act.startDate} onChange={e => handleActivityChange(act.id, 'startDate', e.target.value)} className="p-2 border rounded-md" />
                       <input type="date" value={act.endDate} onChange={e => handleActivityChange(act.id, 'endDate', e.target.value)} className="p-2 border rounded-md" />
                     </Td>
@@ -345,10 +395,10 @@ export default function AddProject() {
                 <input type="text" value={newDocument.name} onChange={e => setNewDocument(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded-md text-black" />
               </Field>
               <Field label="ไฟล์เอกสาร">
-                <label className="flex items-center justify-center p-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 text-gray-300">
+                <label htmlFor="file-upload" className="flex items-center justify-center p-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 text-gray-300">
                   <Upload size={18} className="mr-2" />
                   {newDocument.file ? newDocument.file.name : 'Upload file'}
-                  <input type="file" className="hidden" onChange={handleFileUpload} />
+                  <input type="file" id="file-upload" className="hidden" onChange={handleFileUpload} />
                 </label>
               </Field>
             </div>
@@ -357,25 +407,26 @@ export default function AddProject() {
             <table className="min-w-full divide-y divide-gray-200 mt-4">
               <thead>
                 <tr>
-                  <Th center>สาธารณะ</Th>
-                  <Th>ชื่อ</Th>
-                  <Th>เอกสาร</Th>
-                  <Th>ลบ</Th>
+                  <Th center={true}>สาธารณะ</Th>
+                  <Th center={false}>ชื่อ</Th>
+                  <Th center={false}>เอกสาร</Th>
+                  <Th center={false}>ลบ</Th>
                 </tr>
               </thead>
               <tbody>
                 {documents.map(doc => (
                   <tr key={doc.id}>
-                    <Td center>
+                    <Td center={true}>
                       <input type="checkbox" checked={!!doc.isPublic} onChange={() => handlePublicSelect(doc.id)} />
                     </Td>
-                    <Td>{doc.name}</Td>
-                    <Td>
-                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                    <Td center={false}>{doc.name}</Td>
+                    <Td center={false}>
+                      {/* doc.fileUrl อาจจะไม่ได้ถูกสร้างในโค้ดนี้, แต่ถ้ามีจะแสดงเป็น Link */}
+                      <a href={doc.fileUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
                         {doc.name}
                       </a>
                     </Td>
-                    <Td>
+                    <Td center={false}>
                       <button onClick={() => handleDeleteDocument(doc.id)} className="text-red-600 hover:text-red-900">
                         <Trash2 size={18} />
                       </button>
@@ -392,7 +443,12 @@ export default function AddProject() {
 }
 
 // Helper Components
-function Field({ label, children }: any) {
+// กำหนด Type ของ props ให้ชัดเจน
+interface FieldProps {
+    label: string;
+    children: React.ReactNode;
+}
+function Field({ label, children }: FieldProps) {
   return (
     <div className="flex items-center space-x-4 mb-4">
       <label className="w-48 text-gray-700 font-medium">{label}:</label>
@@ -401,13 +457,18 @@ function Field({ label, children }: any) {
   );
 }
 
-function Th({ children, center }: any) {
+interface TableCellProps {
+    children: React.ReactNode;
+    center: boolean;
+    className?: string;
+}
+function Th({ children, center }: TableCellProps) {
   return (
     <th className={`px-4 py-2 text-left text-sm font-medium text-gray-500 ${center ? 'text-center' : ''}`}>{children}</th>
   );
 }
 
-function Td({ children, center }: any) {
+function Td({ children, center }: TableCellProps) {
   return (
     <td className={`px-4 py-2 text-sm text-gray-700 ${center ? 'text-center' : ''}`}>{children}</td>
   );

@@ -6,11 +6,11 @@ import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function j(data: any, status = 200) {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
+function j(data: unknown, status = 200) {
+  return new NextResponse(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 export async function POST(req: Request) {
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
       return j({ ok: false, message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }, 401);
     }
 
-    // 1. ดึงข้อมูลผู้ใช้ทั้งหมด (Select *)
+
     const { data: userData, error: userErr } = await supabase
       .from('officer')
       .select('*')
@@ -82,10 +82,9 @@ export async function POST(req: Request) {
       return j({ ok: false, message: 'เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้' }, 500);
     }
 
-    // 2. ลบ passwordhash ออกจากข้อมูลที่จะส่งกลับ (เพื่อความปลอดภัย)
-    const { passwordhash, ...userSafeData } = userData;
 
-    // 3. อัปเดตเวลาเข้าสู่ระบบ (Update login_time)
+    const { passwordhash: _passwordhash, ...userSafeData } = userData;
+
     const { error: upErr } = await supabase
       .from('officer')
       .update({ login_time: new Date().toISOString() })

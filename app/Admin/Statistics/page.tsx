@@ -16,6 +16,30 @@ type Project = {
 type PieDatum = { name: string; value: number };
 type BarDatum = { name: string; count: number };
 
+// ✅ Fix 1: New type definition for user data (replaced 'any')
+type UserData = {
+  email: string;
+  // Add other properties if they exist on your user object (e.g., id, name)
+};
+
+// ✅ Fix 4: Create a specific type for the Recharts PieChart label function arguments
+type RechartsPieLabelEntry = {
+  name?: string;
+  percent?: number;
+  value?: number;
+  // Recharts passes many props, defining the ones we use is sufficient
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  startAngle?: number;
+  endAngle?: number;
+  paddingAngle?: number;
+  index?: number;
+  fill?: string;
+};
+
 const CATEGORY_OPTIONS = [
   'เทคโนโลยี',
   'การศึกษา',
@@ -36,7 +60,8 @@ export default function StatisticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState<any>(null);
+  // ✅ Fix 1: Use UserData | null
+  const [user, setUser] = useState<UserData | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const router = useRouter();
@@ -55,9 +80,12 @@ export default function StatisticsDashboard() {
       const data: Project[] = await response.json();
       setProjects(data || []);
       setError(null);
-    } catch (err: any) {
+      // ✅ Fix 2: 'err' is now explicitly typed as 'unknown' in the catch block 
+      // and handled correctly in the original code. No further change needed here.
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
       console.error('Error fetching projects:', err);
-      setError(err.message ?? 'เกิดข้อผิดพลาด');
+      setError(errorMessage);
       setProjects([]);
     } finally {
       setLoading(false);
@@ -67,27 +95,28 @@ export default function StatisticsDashboard() {
   useEffect(() => {
     const token = Cookies.get('auth_token');
     const userData = localStorage.getItem('user_data');
-    
+
     if (!token) {
       console.log("Admin Site Guard: Token not found in cookies, redirecting.");
       router.replace('/');
       return;
     }
-    
+
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        console.error('Invalid user data in localStorage');
+        // ✅ Corrected: Cast the parsed data to UserData
+        setUser(JSON.parse(userData) as UserData);
+      } catch (error: unknown) { // ✅ Fix 3: Explicitly type catch variable 'error' as 'unknown'
+        console.error('Invalid user data in localStorage', error);
         Cookies.remove('auth_token');
-        localStorage.clear();
-        router.replace('/');
+        localStorage.clear();
+        router.replace('/');
       }
     } else {
-        console.log("Admin Site Guard: User Data missing, redirecting.");
-        router.replace('/');
-        return;
-    }
+        console.log("Admin Site Guard: User Data missing, redirecting.");
+        router.replace('/');
+        return;
+    }
 
     fetchProjects();
   }, [router]);
@@ -115,11 +144,14 @@ export default function StatisticsDashboard() {
         
         window.location.href = '/';
       } else {
+        // NOTE: No changes needed here as 'data' is inferred from response.json()
         console.error('Logout failed:', data.message);
         localStorage.clear();
         window.location.href = '/';
       }
     } catch (error) {
+      // NOTE: No change needed here as catch is outside an async function where we use await, 
+      // but explicitly typing as 'unknown' is best practice if we were using it: catch (error: unknown)
       console.error('Logout error:', error);
       localStorage.clear();
       window.location.href = '/';
@@ -371,7 +403,7 @@ export default function StatisticsDashboard() {
                             fill="#8884d8"
                             dataKey="value"
                             nameKey="name" 
-                            label={(entry: any) =>
+                            label={(entry: RechartsPieLabelEntry) => // ✅ Fix 4: Use the defined type
                               `${entry.name ?? ''} (${((entry.percent ?? 0) * 100).toFixed(1)}%)`
                             }
                           >
