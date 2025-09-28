@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { ChevronDown, Save, X, Plus, Upload, Trash2, LogOut } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import Image from 'next/image'; // 💡 ต้อง Import Image จาก next/image เพื่อแก้ Warning
+import React from 'react'; // ต้อง Import React
 
 // --- Type Definitions (เพิ่มเพื่อแก้ปัญหา any) ---
 type ProjectInfo = {
@@ -206,7 +207,8 @@ export default function EditProject() {
         try {
             const file = newDocument.file;
             const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}-${file.name.replace(/[^a-z0-9]/gi, '_')}.${fileExt}`;
+            // 💡 แก้ชื่อไฟล์: ใช้ project ID เพื่อจัดกลุ่มและป้องกันชื่อซ้ำ
+            const fileName = `${id}/${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '_')}.${fileExt}`;
 
             // upload file
             const { data: uploadData, error: uploadError } = await supabase.storage
@@ -225,12 +227,13 @@ export default function EditProject() {
             // id จะถูกใช้เพื่อเป็น key ใน UI ก่อนที่จะถูกบันทึกจริง
             setDocuments(prev => [
                 ...prev,
+                // fileUrl จะถูกบันทึกใน DB เมื่อกดปุ่ม "บันทึก" หลัก
                 { id: nextId(prev), name: newDocument.name, fileUrl: publicUrl, isPublic: false } as DocumentItem
             ]);
 
             setNewDocument({ name: '', file: null });
             // ล้างค่าใน input file
-            (document.getElementById('file-upload') as HTMLInputElement).value = '';
+            (document.getElementById('file-upload-input') as HTMLInputElement).value = '';
             toast.success("เพิ่มเอกสารเรียบร้อย");
         } catch (err: unknown) { // 💡 แก้ Type ของ catch block
             const errorMessage = err instanceof Error ? err.message : "Unknown error during file upload";
@@ -262,7 +265,7 @@ export default function EditProject() {
         try {
             const payload = {
                 project: {
-                    id, // ส่ง ID ไปด้วยเพื่อระบุโครงการที่จะ Update
+                    id: Number(id), // ส่ง ID ไปด้วยเพื่อระบุโครงการที่จะ Update
                     name: projectInfo.projName,
                     code: projectInfo.projCode,
                     department: projectInfo.department,
@@ -277,15 +280,18 @@ export default function EditProject() {
                     status: selectedStatus
                 },
                 activities: activities.map(a => ({
-                    id: a.id,
-                    project_id: id,
+                    // ถ้า id เป็นเลขใหม่ (ที่สร้างขึ้นโดย nextId) จะถูก insert ใน API
+                    // ถ้า id เป็นเลขเดิม จะถูก update
+                    id: a.id, 
+                    project_id: Number(id),
                     description: a.description,
                     start_date: a.startDate || null,
                     end_date: a.endDate || null
                 })),
                 documents: documents.map(d => ({
+                    // Logic เดียวกับ Activities
                     id: d.id,
-                    project_id: id,
+                    project_id: Number(id),
                     name: d.name,
                     file_url: d.fileUrl || null,
                     is_public: d.isPublic ?? false
@@ -453,6 +459,7 @@ export default function EditProject() {
                             <input type="text" value={projectInfo.category} onChange={e => handleProjectChange('category', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
                         </Field>
                         <Field label="งบประมาณ">
+                            {/* 💡 budget input ต้องใช้ projectInfo.budget เพื่อให้สอดคล้องกับ State */}
                             <input type="text" value={projectInfo.budget || ''} onChange={e => handleProjectChange('budget', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
                         </Field>
                         <Field label="ผู้รับผิดชอบ">
@@ -580,8 +587,9 @@ function Th({ children, center, className }: TableCellProps) {
     );
 }
 
+// 💡 เพิ่ม Td Component ที่ขาดหายไป
 function Td({ children, center, className }: TableCellProps) {
     return (
-        <td className={`px-4 py-2 text-sm text-gray-700 ${center ? 'text-center' : ''} ${className || ''}`}>{children}</td>
+        <td className={`px-4 py-2 whitespace-nowrap text-sm text-gray-900 border-t border-gray-200 ${center ? 'text-center' : ''} ${className || ''}`}>{children}</td>
     );
 }
