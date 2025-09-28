@@ -1,10 +1,10 @@
 'use client';
 
 import { createClient } from '@supabase/supabase-js';
-import { ChevronDown, Eye, FileText, Home, MessageSquare, Search, XCircle } from 'lucide-react';
+import { ChevronDown, Eye, FileText, Home, LogOut, MessageSquare, Search, XCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-// Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -56,30 +56,90 @@ export default function HomeDashboard() {
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ทั้งหมด');
   const [searchTerm, setSearchTerm] = useState('');
-
+  const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [commenterName, setCommenterName] = useState('');
   const [projectComments, setProjectComments] = useState<{[key: number]: Comment[]}>({});
+  const [user, setUser] = useState<any>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // โหลดข้อมูลโครงการ + join activities, documents
   useEffect(() => {
-    const fetchProjects = async () => {
+    const token = localStorage.getItem('auth_token');
+    const userData = localStorage.getItem('user_data');
+    const userType = localStorage.getItem('user_type');
+    
+    if (!token && !userType) {
+      router.replace('/');
+      return;
+    }
+    
+    if (userData) {
       try {
-        const res = await fetch('/api/projects');
-        if (res.ok) {
-          const data = await res.json();
-          setProjects(data);
-        } else {
-          console.error('Failed to fetch projects');
-        }
-      } catch (error) {
-        console.error('Error fetching projects:', error);
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error('Invalid user data in localStorage');
       }
+    }
+
+    const fetchProjects = async () => {
+  try { 
+    const { data, error } = await supabase
+      .from("projects")
+      .select(`*, activities(*), documents(*)`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return;
+    }
+
+    if (data) {
+      setProjects(data);
+    }
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+  }
     };
     fetchProjects();
-  }, []);
+  },  [router]);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return; 
+    
+    setIsLoggingOut(true);
+    
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.ok) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        localStorage.removeItem('user_type');
+        localStorage.clear();
+        
+        window.location.href = '/';
+      } else {
+        console.error('Logout failed:', data.message);
+        localStorage.clear();
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      localStorage.clear();
+      window.location.href = '/';
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   
@@ -108,8 +168,8 @@ export default function HomeDashboard() {
     setSelectedStatusFilter(option);
     setIsStatusFilterOpen(false);
   };
+  const navigateTo = (path: string) => router.push(path);
 
-  // เพิ่มฟังก์ชัน fetch comments
   const fetchComments = async (projectId: number) => {
     try {
       const res = await fetch(`/api/comment?project_id=${projectId}`);
@@ -131,11 +191,10 @@ export default function HomeDashboard() {
     }
   };
 
-  // เรียก fetch comments ตอนเลือกโปรเจค
   const handleProjectClick = (project: Project) => {
     setSelectedProject(project);
     setShowCommentBox(false);
-    fetchComments(project.id); // ✅ โหลดคอมเมนต์ของโปรเจคนี้
+    fetchComments(project.id);
   };
 
   const handleCloseProjectDetails = () => setSelectedProject(null);
@@ -204,7 +263,6 @@ export default function HomeDashboard() {
     }
   };
   
-  // Filter and search projects
   const filteredProjects = projects
     .filter(project => 
       selectedStatusFilter === 'ทั้งหมด' ? true : project.status === selectedStatusFilter
@@ -216,8 +274,6 @@ export default function HomeDashboard() {
       (project.responsible_person && project.responsible_person.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    
-
   return (
     <div className="min-h-screen bg-gray-100 font-inter">
       {/* Header */}
@@ -226,13 +282,18 @@ export default function HomeDashboard() {
           <div className="bg-white p-2 rounded-full mr-3">
             <img
               src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
-              alt="Logo"
+              alt="โลโก้"
               className="h-10 w-10 rounded-full"
             />
           </div>
           <div>
             <h1 className="text-xl font-bold">การจัดการโครงการพัฒนาเทศบาลตำบลปะโค</h1>
             <p className="text-sm">อำเภอเมืองหนองคาย จังหวัดหนองคาย</p>
+            {user && (
+              <p className="text-xs opacity-80">
+                ยินดีต้อนรับ: {user.email}
+              </p>
+            )}
           </div>
         </div>
       </header>
@@ -257,32 +318,23 @@ export default function HomeDashboard() {
         </div>
       </nav>
 
-      <div className="flex">
+      <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="w-64 bg-white p-4 shadow-lg min-h-[calc(100vh-120px)]">
+        <aside className="w-64 bg-white p-4 shadow-lg min-h-[calc(100vh-64px)]">
           <div className="mb-6">
-            <div
-              className="flex items-center justify-between p-3 bg-blue-100 rounded-md mb-2 cursor-pointer hover:bg-blue-200"
-              onClick={toggleMenu}
-            >
+            <div className="flex items-center justify-between p-3 bg-blue-100 rounded-md mb-2 cursor-pointer hover:bg-blue-200" onClick={toggleMenu}>
               <span className="font-semibold text-gray-800">เมนู</span>
-              <ChevronDown
-                className={`text-gray-600 transform transition-transform duration-200 ${
-                  isMenuOpen ? 'rotate-180' : ''
-                }`}
-                size={18}
-              />
+              <ChevronDown className={`text-gray-600 transform transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} size={18} />
             </div>
             {isMenuOpen && (
               <ul className="space-y-1">
-                <li
-                  className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
-                  onClick={() => setSelectedProject(null)}
+                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Alluser/Home')}>โครงการทั้งหมด</li>
+                <li 
+                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
+                  onClick={handleLogout}
                 >
-                  โครงการทั้งหมด
-                </li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer">
-                  ออกจากระบบ
+                  <LogOut size={16} />
+                  <span>{isLoggingOut ? 'กำลังออก...' : 'ออกจากระบบ'}</span>
                 </li>
               </ul>
             )}
@@ -291,7 +343,6 @@ export default function HomeDashboard() {
 
         <main className="flex-1 p-6">
           {selectedProject ? (
-            // Project Detail View
             <div className="bg-white rounded-lg shadow-md p-6 relative">
               <button
                 onClick={handleCloseProjectDetails}
@@ -453,7 +504,7 @@ export default function HomeDashboard() {
               </div>
             </div>
           ) : (
-            // Project List View
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">โครงการทั้งหมด</h2>
@@ -462,7 +513,6 @@ export default function HomeDashboard() {
                   <div className="flex items-center text-blue-600">
                     <span className="font-medium">เรียงจาก</span>
                   </div>
-
                   <div className="relative">
                     <div
                       className="flex items-center text-blue-600 cursor-pointer hover:text-blue-800"
