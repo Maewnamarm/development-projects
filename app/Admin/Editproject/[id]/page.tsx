@@ -1,11 +1,11 @@
 'use client';
 
-import { ChevronDown, Home, Plus, Save, Trash2, Upload, X, LogOut } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { ChevronDown, Save, X, Plus, Upload, Trash2,LogOut } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
-// สร้าง Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -18,21 +18,15 @@ const STATUS_OPTIONS = [
 
 const PLACEHOLDER_LOGO = 'https://placehold.co/40x40/ffffff/000000?text=LOGO';
 
-const getStatusMeta = (status: string) => STATUS_OPTIONS.find((opt) => opt.status === status) || STATUS_OPTIONS[0];
+const getStatusMeta = (status: string) => STATUS_OPTIONS.find(opt => opt.status === status) || STATUS_OPTIONS[0];
 const nextId = (arr: any[]) => (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
 
-export default function AddProject() {
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
-  const toggleMenu = () => setIsMenuOpen((v) => !v);
+export default function EditProject() {
+  const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const navigateTo = (path: string) => { window.location.href = path; };
+  const { id } = useParams<{ id: string }>();
 
-  // --- safeNumber อยู่ใน scope ของ component ---
-  const safeNumber = (n: any) => {
-    if (n === "" || n === null || n === undefined) return null;
-    const num = Number(n);
-    return isNaN(num) ? null : num;
-  };
+  const [loading, setLoading] = useState(true);
 
   /** Project Info */
   const [projectInfo, setProjectInfo] = useState({
@@ -49,29 +43,108 @@ export default function AddProject() {
     contactInfo: ''
   });
 
+  const [activities, setActivities] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [newDocument, setNewDocument] = useState<{ name: string; file: File | null }>({ name: '', file: null });
+
+  const [selectedStatus, setSelectedStatus] = useState('กำลังดำเนินการ');
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const statusMeta = useMemo(() => getStatusMeta(selectedStatus), [selectedStatus]);
+
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const toggleMenu = () => setIsMenuOpen(v => !v);
+  const navigateTo = (path: string) => { router.push(path); };
+
+  const safeNumber = (n: any) => {
+    if (n === "" || n === null || n === undefined) return null;
+    const num = Number(n);
+    return isNaN(num) ? null : num;
+  };
+
+  /** Fetch project + activities + documents */
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      try {
+        // 1️⃣ fetch project
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .select(`
+            id, name, code, department, location, start_date, end_date,
+            objective, category, budget, responsible_person, contact_info, status
+          `)
+          .eq('id', id)
+          .single();
+
+        if (projectError) throw projectError;
+
+        if (projectData) {
+          setProjectInfo({
+            projName: projectData.name,
+            projCode: projectData.code,
+            department: projectData.department,
+            location: projectData.location,
+            startDate: projectData.start_date,
+            endDate: projectData.end_date,
+            objective: projectData.objective,
+            category: projectData.category,
+            budget: projectData.budget,
+            responsiblePerson: projectData.responsible_person,
+            contactInfo: projectData.contact_info,
+          });
+          setSelectedStatus(projectData.status || 'กำลังดำเนินการ');
+        }
+
+        const projectId = Number(id);
+
+        // 2️⃣ fetch activities by project_id
+        const { data: activitiesData, error: activitiesError } = await supabase
+          .from('activities')
+          .select('*')
+          .eq('project_id',projectId);
+
+        if (activitiesError) throw activitiesError;
+
+        setActivities((activitiesData || []).map(a => ({
+          id: a.id,
+          description: a.description,
+          startDate: a.start_date,
+          endDate: a.end_date
+        })));
+
+        // 3️⃣ fetch documents by project_id
+        const { data: documentsData, error: documentsError } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('project_id', projectId);
+
+        if (documentsError) throw documentsError;
+
+        setDocuments((documentsData || []).map(d => ({
+          id: d.id,
+          name: d.name,
+          fileUrl: d.file_url,
+          isPublic: d.is_public
+        })));
+
+      } catch (err: any) {
+        toast.error("โหลดข้อมูลโครงการล้มเหลว: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjectData();
+  }, [id]);
+
+  /** Handlers */
   const handleProjectChange = (field: string, value: string) => {
     setProjectInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  /** Activities */
-  const [activities, setActivities] = useState([{ id: 1, description: '', startDate: '', endDate: '' }]);
   const addActivity = () => setActivities(prev => [...prev, { id: nextId(prev), description: '', startDate: '', endDate: '' }]);
   const removeLastActivity = () => setActivities(prev => prev.length > 0 ? prev.slice(0, -1) : prev);
   const handleActivityChange = (id: number, field: string, value: string) => {
     setActivities(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
-  };
-
-  /** Documents */
-  const [newDocument, setNewDocument] = useState<{ name: string; file: File | null }>({ name: '', file: null });
-  const [documents, setDocuments] = useState<any[]>([]);
-
-  const handlePublicSelect = (id: number) => {
-    setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, isPublic: !doc.isPublic } : doc));
-  };
-
-  const handleDeleteDocument = (id: number) => {
-    setDocuments(prev => prev.filter(doc => doc.id !== id));
-    toast.success("ลบเอกสารสำเร็จ");
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,80 +158,99 @@ export default function AddProject() {
       toast.error("กรุณากรอกชื่อเอกสารและเลือกไฟล์ก่อนบันทึก");
       return;
     }
-  
+
     try {
       const file = newDocument.file;
-  
-      const toBase64 = (file: File) =>
-        new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => {
-            const result = reader.result;
-            if (!result) return reject("ไฟล์ว่าง");
-            resolve((result as string).split(",")[1]); // เอาเฉพาะ Base64
-          };
-          reader.onerror = (err) => reject(err);
-        });
-  
-      const base64File = await toBase64(file);
-  
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+
+      // upload file
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('project-files')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // get public URL
+      const { data: publicData } = supabase.storage.from('project-files').getPublicUrl(fileName);
+      const publicUrl = publicData?.publicUrl;
+
       setDocuments(prev => [
         ...prev,
-        {
-          id: nextId(prev),
-          name: newDocument.name,
-          file: base64File,
-          type: file.type,
-          isPublic: false,
-        }
+        { id: nextId(prev), name: newDocument.name, fileUrl: publicUrl, isPublic: false }
       ]);
-  
-      setNewDocument({ name: "", file: null });
+
+      setNewDocument({ name: '', file: null });
       toast.success("เพิ่มเอกสารเรียบร้อย");
     } catch (err: any) {
-      toast.error("เกิดข้อผิดพลาดในการแปลงไฟล์: " + err);
+      toast.error("เกิดข้อผิดพลาดในการอัปโหลดไฟล์: " + err.message);
     }
   };
-  
-  
-  
 
-  /** Status */
-  const [selectedStatus, setSelectedStatus] = useState('กำลังดำเนินการ');
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const statusMeta = useMemo(() => getStatusMeta(selectedStatus), [selectedStatus]);
-  const handleStatusSelect = (status: string) => { setSelectedStatus(status); setIsStatusDropdownOpen(false); };
+  const handlePublicSelect = (id: number) => {
+    setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, isPublic: !doc.isPublic } : doc));
+  };
+
+  const handleDeleteDocument = (id: number) => {
+    setDocuments(prev => prev.filter(doc => doc.id !== id));
+    toast.success("ลบเอกสารสำเร็จ");
+  };
+
+  const handleStatusSelect = (status: string) => {
+    setSelectedStatus(status);
+    setIsStatusDropdownOpen(false);
+  };
 
   /** Save Project */
   const handleSave = async () => {
-    if (!projectInfo.projName || !projectInfo.projCode || !projectInfo.department) {
-      toast.error("กรุณากรอกข้อมูลโครงการให้ครบ");
-      return;
-    }
-
     try {
-      const response = await fetch("/api/saveProject", {
+      const payload = {
+        project: {
+          id,
+          name: projectInfo.projName,
+          code: projectInfo.projCode,
+          department: projectInfo.department,
+          location: projectInfo.location,
+          start_date: projectInfo.startDate,
+          end_date: projectInfo.endDate,
+          objective: projectInfo.objective,
+          category: projectInfo.category,
+          budget: safeNumber(projectInfo.budget),
+          responsible_person: projectInfo.responsiblePerson,
+          contact_info: projectInfo.contactInfo,
+          status: selectedStatus
+        },
+        activities: activities.map(a => ({
+          id: a.id,
+          project_id: id,
+          description: a.description,
+          start_date: a.startDate,
+          end_date: a.endDate
+        })),
+        documents: documents.map(d => ({
+          id: d.id,
+          project_id: id,
+          name: d.name,
+          file_url: d.fileUrl || null,
+          is_public: d.isPublic ?? false
+        }))
+      };
+
+      const res = await fetch("/api/updateProject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...projectInfo,
-          budget: safeNumber(projectInfo.budget),
-          status: selectedStatus,
-          activities,
-          documents
-        }),
+        body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-      if (response.ok) {
-        toast.success("บันทึกโครงการเรียบร้อย");
-        setTimeout(() => navigateTo("/Admin/Site"), 1000);
-      } else {
-        toast.error("บันทึกโครงการไม่สำเร็จ: " + data.message);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "อัปเดตไม่สำเร็จ");
       }
-    } catch (error: any) {
-      toast.error("เกิดข้อผิดพลาด: " + error.message);
+
+      toast.success("บันทึกโครงการเรียบร้อย");
+      setTimeout(() => router.push("/Admin/Site"), 1000);
+    } catch (err: any) {
+      toast.error("อัปเดตไม่สำเร็จ: " + err.message);
     }
   };
   const handleLogout = async () => {
@@ -197,9 +289,13 @@ export default function AddProject() {
     }
   };
 
+  if (loading) return <div className="p-6">⏳ กำลังโหลดข้อมูล...</div>;
+
+  /** Render */
   return (
     <div className="min-h-screen bg-gray-100 font-inter flex flex-col">
       <Toaster position="top-right" />
+
       {/* Header */}
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
@@ -242,7 +338,7 @@ export default function AddProject() {
         <main className="flex-1 p-6 space-y-8 overflow-y-auto">
           {/* Project Info */}
           <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-            <h2 className="text-2xl font-semibold text-gray-800">เพิ่มโครงการใหม่</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">แก้ไขโครงการ</h2>
             <Field label="ชื่อโครงการ">
               <input type="text" value={projectInfo.projName} onChange={e => handleProjectChange('projName', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
             </Field>
@@ -291,7 +387,7 @@ export default function AddProject() {
               <input type="text" value={projectInfo.category} onChange={e => handleProjectChange('category', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
             </Field>
             <Field label="งบประมาณ">
-              <input type="text" value={projectInfo.budget} onChange={e => handleProjectChange('budget', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+              <input type="text" value={projectInfo.budget || ''} onChange={e => handleProjectChange('budget', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
             </Field>
             <Field label="ผู้รับผิดชอบ">
               <input type="text" value={projectInfo.responsiblePerson} onChange={e => handleProjectChange('responsiblePerson', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
@@ -321,10 +417,10 @@ export default function AddProject() {
                 {activities.map(act => (
                   <tr key={act.id}>
                     <Td>{act.id}</Td>
-                    <Td><input type="text" value={act.description} onChange={e => handleActivityChange(act.id, 'description', e.target.value)} className="w-full p-2 border rounded-md" /></Td>
+                    <Td><input type="text" value={act.description || ''} onChange={e => handleActivityChange(act.id, 'description', e.target.value)} className="w-full p-2 border rounded-md" /></Td>
                     <Td className="flex space-x-2">
-                      <input type="date" value={act.startDate} onChange={e => handleActivityChange(act.id, 'startDate', e.target.value)} className="p-2 border rounded-md" />
-                      <input type="date" value={act.endDate} onChange={e => handleActivityChange(act.id, 'endDate', e.target.value)} className="p-2 border rounded-md" />
+                      <input type="date" value={act.startDate || ''} onChange={e => handleActivityChange(act.id, 'startDate', e.target.value)} className="p-2 border rounded-md" />
+                      <input type="date" value={act.endDate || ''} onChange={e => handleActivityChange(act.id, 'endDate', e.target.value)} className="p-2 border rounded-md" />
                     </Td>
                   </tr>
                 ))}
@@ -339,7 +435,6 @@ export default function AddProject() {
           {/* Documents Section */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold mb-4 text-black">เอกสาร</h2>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 ">
               <Field label="ชื่อเอกสาร">
                 <input type="text" value={newDocument.name} onChange={e => setNewDocument(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded-md text-black" />
@@ -371,9 +466,13 @@ export default function AddProject() {
                     </Td>
                     <Td>{doc.name}</Td>
                     <Td>
-                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                        {doc.name}
-                      </a>
+                      {doc.fileUrl ? (
+                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                          {doc.name}
+                        </a>
+                      ) : (
+                        <span>{doc.name}</span>
+                      )}
                     </Td>
                     <Td>
                       <button onClick={() => handleDeleteDocument(doc.id)} className="text-red-600 hover:text-red-900">
@@ -391,7 +490,7 @@ export default function AddProject() {
   );
 }
 
-// Helper Components
+/** Helper Components */
 function Field({ label, children }: any) {
   return (
     <div className="flex items-center space-x-4 mb-4">

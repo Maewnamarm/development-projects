@@ -1,23 +1,17 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// สร้าง Supabase client (ใช้ Service Role Key)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ฟังก์ชันช่วยแปลงตัวเลข
+// ฟังก์ชัน safeNumber
 const safeNumber = (n: any) => {
   if (n === "" || n === null || n === undefined) return null;
   const num = Number(n);
   return isNaN(num) ? null : num;
-};
-
-// ฟังก์ชันช่วยแปลงวันที่
-const safeDate = (d: any) => {
-  if (!d || d === "" || d === "00/00/00") return null;
-  const parsed = new Date(d);
-  return isNaN(parsed.getTime()) ? null : parsed.toISOString().split("T")[0]; // YYYY-MM-DD
 };
 
 export async function POST(req: Request) {
@@ -37,10 +31,10 @@ export async function POST(req: Request) {
       responsiblePerson,
       contactInfo,
       activities,
-      documents,
+      documents, // [{ file (base64), name, type?, isPublic }]
     } = body;
 
-    // Step 1: Insert Project
+    // 1) Insert Project
     const { data: project, error: projectError } = await supabase
       .from("projects")
       .insert([
@@ -49,8 +43,8 @@ export async function POST(req: Request) {
           code: projCode,
           department,
           location,
-          start_date: safeDate(startDate),
-          end_date: safeDate(endDate),
+          start_date: startDate,
+          end_date: endDate,
           objective,
           status,
           category,
@@ -65,35 +59,51 @@ export async function POST(req: Request) {
     if (projectError) throw projectError;
     const projectId = project.id;
 
-    // Step 2: Insert Activities
+    // 2) Insert Activities
     if (activities && activities.length > 0) {
       const activityRows = activities.map((a: any) => ({
         project_id: projectId,
         description: a.description,
-        start_date: safeDate(a.startDate),
-        end_date: safeDate(a.endDate),
+        start_date: a.startDate,
+        end_date: a.endDate,
       }));
 
-      const { error: activityError } = await supabase
+      const { error: actError } = await supabase
         .from("activities")
         .insert(activityRows);
 
-      if (activityError) throw activityError;
+      if (actError) throw actError;
     }
 
-    // Step 3: Insert Documents
+    // 3) Upload Documents
     if (documents && documents.length > 0) {
-      const docRows = documents.map((d: any) => ({
-        project_id: projectId,
-        name: d.name,
-        file_url: d.fileUrl,
-        is_public: d.isPublic || false,
-      }));
+      const docRows: any[] = [];
 
-      const { error: docError } = await supabase
-        .from("documents")
-        .insert(docRows);
-
+      for (const d of documents) {
+        if (!d.file) throw new Error(`เอกสาร ${d.name} ไม่มีไฟล์`);
+      
+        const filePath = `project-files/${crypto.randomUUID()}-${d.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("project-files")
+          .upload(filePath, Buffer.from(d.file, "base64"), {
+            contentType: d.type || "application/octet-stream",
+          });
+      
+        if (uploadError) throw uploadError;
+      
+        const { data: publicUrl } = supabase.storage
+          .from("project-files")
+          .getPublicUrl(filePath);
+      
+        docRows.push({
+          project_id: projectId,
+          name: d.name,
+          file_url: publicUrl.publicUrl,
+          is_public: d.isPublic || false,
+        });
+      }
+      
+      const { error: docError } = await supabase.from("documents").insert(docRows);
       if (docError) throw docError;
     }
 

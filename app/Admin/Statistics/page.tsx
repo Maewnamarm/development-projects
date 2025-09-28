@@ -1,133 +1,195 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, Home } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { ChevronDown, Home, LogOut, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import Cookies from 'js-cookie';
 
+type Project = {
+  id: number;
+  name: string;
+  status?: string | null;
+  category?: string | null;
+};
 
+type PieDatum = { name: string; value: number };
+type BarDatum = { name: string; count: number };
 
-const allProjects = [
-  {
-    id: 1,
-    title: 'โครงการซ่อมถนนด้วยยางมะตอย',
-    status: 'กำลังดำเนินการ',
-    statusColor: 'bg-yellow-400',
-    lastUpdated: 'แก้ไขล่าสุด 15/07/2568 เวลา 10:30 นาที',
-  },
-  {
-    id: 2,
-    title: 'โครงการขยายถนนบ้านโพธิ์',
-    status: 'เสร็จสิ้น',
-    statusColor: 'bg-green-500',
-    lastUpdated: 'แก้ไขล่าสุด 14/07/2568 เวลา 16:00 นาที',
-  },
-  {
-    id: 3,
-    title: 'โครงการต่อเติมหลังคาบ้านท้าย',
-    status: 'ระงับ',
-    statusColor: 'bg-gray-400',
-    lastUpdated: 'แก้ไขล่าสุด 12/07/2568 เวลา 09:15 นาที',
-  },
-  {
-    id: 4,
-    title: 'โครงการทำถนนสี่เลน',
-    status: 'ระงับ',
-    statusColor: 'bg-gray-400',
-    lastUpdated: 'แก้ไขล่าสุด 10/07/2568 เวลา 11:45 นาที',
-  },
-  {
-    id: 5,
-    title: 'โครงการอ่างเก็บน้ำ',
-    status: 'ระงับ',
-    statusColor: 'bg-gray-400',
-    lastUpdated: 'แก้ไขล่าสุด 08/07/2568 เวลา 14:20 นาที',
-  },
-  {
-    id: 6,
-    title: 'โครงการปรับปรุงภูมิทัศน์',
-    status: 'กำลังดำเนินการ',
-    statusColor: 'bg-yellow-400',
-    lastUpdated: 'แก้ไขล่าสุด 16/07/2568 เวลา 09:00 นาที',
-  },
-  {
-    id: 7,
-    title: 'โครงการสร้างอาคารเอนกประสงค์',
-    status: 'เสร็จสิ้น',
-    statusColor: 'bg-green-500',
-    lastUpdated: 'แก้ไขล่าสุด 13/07/2568 เวลา 11:00 นาที',
-  },
-  {
-    id: 8,
-    title: 'โครงการพัฒนาแหล่งน้ำ',
-    status: 'กำลังดำเนินการ',
-    statusColor: 'bg-yellow-400',
-    lastUpdated: 'แก้ไขล่าสุด 17/07/2568 เวลา 14:00 นาที',
-  },
-];
-
-
-const barChartData = [
-  { name: 'เทคโนโลยี', count: 2 },
-  { name: 'การศึกษา', count: 5 },
-  { name: 'สาธารณสุข', count: 6 },
-  { name: 'เศรษฐกิจ', count: 3 },
-  { name: 'สังคม', count: 7 },
-  { name: 'โครงสร้างพื้นฐาน', count: 6 },
-  { name: 'สิ่งแวดล้อม', count: 2 },
-  { name: 'การบริหาร', count: 1 },
-  { name: 'อื่นๆ', count: 1 },
-  { name: 'หมวดหมู่', count: 0 }, 
+const CATEGORY_OPTIONS = [
+  'เทคโนโลยี',
+  'การศึกษา',
+  'สาธารณสุข',
+  'เศรษฐกิจ',
+  'สังคม',
+  'โครงสร้างพื้นฐาน',
+  'สิ่งแวดล้อม',
+  'การบริหาร',
+  'อื่นๆ'
 ];
 
 export default function StatisticsDashboard() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
-  const [pieChartData, setPieChartData] = useState([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [pieChartData, setPieChartData] = useState<PieDatum[]>([]);
+  const [barChartData, setBarChartData] = useState<BarDatum[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [user, setUser] = useState<any>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const router = useRouter();
 
-  const COLORS = {
-    'กำลังดำเนินการ': '#FFBB28', 
-    'เสร็จสิ้น': '#00C49F', 
-    'ระงับ': '#8884d8', 
+  const COLORS: Record<string, string> = {
+    'กำลังดำเนินการ': '#FFBB28',
+    'เสร็จสิ้น': '#00C49F',
+    'ระงับ': '#FF8042',
+  };
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/projects');
+      if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลโครงการได้');
+      const data: Project[] = await response.json();
+      setProjects(data || []);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching projects:', err);
+      setError(err.message ?? 'เกิดข้อผิดพลาด');
+      setProjects([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    const statusCounts: { [key: string]: number } = {
-      'กำลังดำเนินการ': 0,
-      'เสร็จสิ้น': 0,
-      'ระงับ': 0,
-    };
-
-    allProjects.forEach(project => {
-      if (statusCounts.hasOwnProperty(project.status)) {
-        statusCounts[project.status]++;
+    const token = Cookies.get('auth_token');
+    const userData = localStorage.getItem('user_data');
+    
+    if (!token) {
+      console.log("Admin Site Guard: Token not found in cookies, redirecting.");
+      router.replace('/');
+      return;
+    }
+    
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error('Invalid user data in localStorage');
+        Cookies.remove('auth_token');
+        localStorage.clear();
+        router.replace('/');
       }
-    });
+    } else {
+        console.log("Admin Site Guard: User Data missing, redirecting.");
+        router.replace('/');
+        return;
+    }
 
-    const data = Object.keys(statusCounts).map(status => ({
-      name: status,
-      value: statusCounts[status],
-    }));
-    setPieChartData(data);
-  }, []);
+    fetchProjects();
+  }, [router]);
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const handleLogout = async () => {
+    if (isLoggingOut) return; 
+    
+    setIsLoggingOut(true);
+    
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.ok) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        localStorage.removeItem('user_type');
+        localStorage.clear();
+        
+        window.location.href = '/';
+      } else {
+        console.error('Logout failed:', data.message);
+        localStorage.clear();
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      localStorage.clear();
+      window.location.href = '/';
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
-  const navigateTo = (path: string) => {
-    router.push(path);
-  };
+  const filteredProjects = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter(p =>
+      [p.name, p.status ?? '', p.category ?? ''].some(v => v.toLowerCase().includes(q))
+    );
+  }, [projects, searchQuery]);
+
+  useEffect(() => {
+    if (filteredProjects.length > 0) {
+      const statusCounts: Record<string, number> = {
+        'กำลังดำเนินการ': 0,
+        'เสร็จสิ้น': 0,
+        'ระงับ': 0,
+      };
+
+      filteredProjects.forEach(project => {
+        const status = project.status ?? '';
+        if (status in statusCounts) statusCounts[status]++;
+      });
+
+      const statusData: PieDatum[] = Object.keys(statusCounts)
+        .map(status => ({ name: status, value: statusCounts[status] }))
+        .filter(item => item.value > 0);
+
+      setPieChartData(statusData);
+
+      const categoryCounts: Record<string, number> = {};
+      CATEGORY_OPTIONS.forEach(c => { categoryCounts[c] = 0; });
+
+      filteredProjects.forEach(project => {
+        const category = project.category ?? 'อื่นๆ';
+        if (category in categoryCounts) categoryCounts[category]++;
+        else categoryCounts['อื่นๆ']++;
+      });
+
+      const categoryData: BarDatum[] = Object.keys(categoryCounts).map(category => ({
+        name: category,
+        count: categoryCounts[category],
+      }));
+
+      setBarChartData(categoryData);
+    } else {
+      setPieChartData([]);
+      setBarChartData(CATEGORY_OPTIONS.map(category => ({ name: category, count: 0 })));
+    }
+  }, [filteredProjects]);
+
+  const toggleMenu = () => setIsMenuOpen(v => !v);
+  const navigateTo = (path: string) => router.push(path);
+
+  const totalProjects = filteredProjects.length;
+  const getPercentage = (value: number) => totalProjects > 0 ? ((value / totalProjects) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="min-h-screen bg-gray-100 font-inter">
+    <div className="min-h-screen bg-gray-100 font-sans">
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
           <div className="bg-white p-2 rounded-full mr-3">
             <img
               src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
-              alt="เทศบาลตำบลปะโค Logo"
+              alt="โลโก้"
               className="h-10 w-10 rounded-full"
               onError={(e) => {
                 e.currentTarget.src = 'https://placehold.co/40x40/ffffff/000000?text=LOGO';
@@ -137,6 +199,11 @@ export default function StatisticsDashboard() {
           <div>
             <h1 className="text-xl font-bold">การจัดการโครงการพัฒนาเทศบาลตำบลปะโค</h1>
             <p className="text-sm">อำเภอเมืองหนองคาย จังหวัดหนองคาย</p>
+            {user && (
+              <p className="text-xs opacity-80">
+                ยินดีต้อนรับ: {user.email}
+              </p>
+            )}
           </div>
         </div>
       </header>
@@ -152,7 +219,9 @@ export default function StatisticsDashboard() {
               type="text"
               placeholder="ค้นหาข้อมูลที่นี่..."
               className="p-2 pl-4 pr-10 bg-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
-            />
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              />
             <Search className="absolute right-3 text-gray-500" size={20} />
           </div>
         </div>
@@ -182,17 +251,24 @@ export default function StatisticsDashboard() {
                 >
                   โครงการทั้งหมด
                 </li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer">
+                <li 
+                  className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+                  onClick={() => navigateTo('/Admin/AddProject')}
+                >
                   เพิ่มโครงการ
                 </li>
                 <li
-                  className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer"
+                  className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer bg-blue-50 border-l-4 border-blue-500"
                   onClick={() => navigateTo('/Admin/Statistics')}
                 >
                   สถิติ
                 </li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer">
-                  ออกจาระบบ
+                <li 
+                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  <span>{isLoggingOut ? 'กำลังออก...' : 'ออกจากระบบ'}</span>
                 </li>
               </ul>
             )}
@@ -202,50 +278,120 @@ export default function StatisticsDashboard() {
         <main className="flex-1 p-6">
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">สถิติ</h2>
+              <h2 className="text-2xl font-bold text-gray-800">สถิติโครงการ</h2>
+              <button
+                onClick={fetchProjects}
+                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+              >
+                รีเฟรชข้อมูล
+              </button>
             </div>
 
-            <div className="space-y-8">
-              <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
-                <h3 className="text-xl font-semibold text-gray-700 mb-4">จำนวนโครงการตามหมวดหมู่</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <XAxis dataKey="name" interval={0} angle={-45} textAnchor="end" height={80} />
-                    <YAxis label={{ value: 'จำนวน', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip />
-                    <Legend wrapperStyle={{
-                        transform: 'translateY(10px)', // ขยับลง 10px
-                      }} />
-                    <Bar dataKey="count" fill="#8884d8" name="จำนวนโครงการ" />
-                  </BarChart>
-                </ResponsiveContainer>
+            {loading && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-lg text-gray-600">กำลังโหลดข้อมูล...</div>
               </div>
+            )}
 
-              <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
-                <h3 className="text-xl font-semibold text-gray-700 mb-4">สถานะโครงการ</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      nameKey="name" 
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    >
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend layout="vertical" align="right" verticalAlign="middle" />
-                  </PieChart>
-                </ResponsiveContainer>
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                <strong>เกิดข้อผิดพลาด:</strong> {error}
               </div>
-            </div>
+            )}
+
+            {!loading && !error && (
+              <>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                  <div className="bg-blue-100 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-blue-800">โครงการทั้งหมด</h3>
+                    <p className="text-2xl font-bold text-blue-900">{totalProjects}</p>
+                  </div>
+                  <div className="bg-yellow-100 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-yellow-800">กำลังดำเนินการ</h3>
+                    <p className="text-2xl font-bold text-yellow-900">
+                      {pieChartData.find(item => item.name === 'กำลังดำเนินการ')?.value || 0}
+                    </p>
+                    <p className="text-sm text-yellow-700">
+                      ({getPercentage(pieChartData.find(item => item.name === 'กำลังดำเนินการ')?.value || 0)}%)
+                    </p>
+                  </div>
+                  <div className="bg-green-100 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-green-800">เสร็จสิ้น</h3>
+                    <p className="text-2xl font-bold text-green-900">
+                      {pieChartData.find(item => item.name === 'เสร็จสิ้น')?.value || 0}
+                    </p>
+                    <p className="text-sm text-green-700">
+                      ({getPercentage(pieChartData.find(item => item.name === 'เสร็จสิ้น')?.value || 0)}%)
+                    </p>
+                  </div>
+                  <div className="bg-orange-100 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-orange-800">ระงับ</h3>
+                    <p className="text-2xl font-bold text-orange-900">
+                      {pieChartData.find(item => item.name === 'ระงับ')?.value || 0}
+                    </p>
+                    <p className="text-sm text-orange-700">
+                      ({getPercentage(pieChartData.find(item => item.name === 'ระงับ')?.value || 0)}%)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  {/* Bar Chart */}
+                  <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                    <h3 className="text-xl font-semibold text-gray-700 mb-4">จำนวนโครงการตามหมวดหมู่</h3>
+                    {barChartData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                          <XAxis dataKey="name" interval={0} angle={-45} textAnchor="end" height={80} />
+                          <YAxis label={{ value: 'จำนวน', angle: -90, position: 'insideLeft' }} />
+                          <Tooltip />
+                          <Bar dataKey="count" fill="#3B82F6" name="จำนวนโครงการ" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-64 flex items-center justify-center text-gray-500">
+                        ไม่มีข้อมูลโครงการ
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pie Chart */}
+                  <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                    <h3 className="text-xl font-semibold text-gray-700 mb-4">สถานะโครงการ</h3>
+                    {pieChartData.length > 0 && totalProjects > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={pieChartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="value"
+                            nameKey="name" 
+                            label={(entry: any) =>
+                              `${entry.name ?? ''} (${((entry.percent ?? 0) * 100).toFixed(1)}%)`
+                            }
+                          >
+                            {pieChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[entry.name]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend layout="vertical" align="right" verticalAlign="middle" />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-64 flex items-center justify-center text-gray-500">
+                        ไม่มีข้อมูลโครงการ
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </main>
       </div>

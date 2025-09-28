@@ -1,150 +1,304 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, ChevronDown, Home, XCircle, MessageSquare, FileText } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+import { ChevronDown, Eye, FileText, Home, LogOut, MessageSquare, Search, XCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+interface Activity {
+  id: number;
+  description: string;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+interface Document {
+  id: number;
+  name: string;
+  file_url: string;
+  is_public: boolean;
+}
 
 interface Project {
   id: number;
-  title: string;
-  status: string;
-  statusColor: string;
-  lastUpdated: string;
-  description?: string;
-  responsiblePerson?: string;
-  location?: string;
-  startDate?: string;
-  endDate?: string;
-  estimatedBudget?: string;
-  images?: string[];
-  comments?: { user: string; text: string; date: string }[];
-  documents?: { name: string; url: string }[];
+  name: string;
+  code: string;
+  department: string | null;
+  location: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  objective: string | null;
+  status: string | null;
+  category: string | null;
+  budget: number | null;
+  responsible_person: string | null;
+  contact_info: string | null;
+  created_at?: string;
+  activities?: Activity[];
+  documents?: Document[];
 }
 
-const initialProjects: Project[] = [
-  {
-    id: 1,
-    title: 'โครงการซ่อมถนนด้วยยางมะตอย',
-    status: 'กำลังดำเนินการ',
-    statusColor: 'bg-yellow-400',
-    lastUpdated: 'แก้ไขล่าสุด 15/07/2568 เวลา 10:30 นาที',
-    description: 'โครงการนี้มีวัตถุประสงค์เพื่อปรับปรุงและซ่อมแซมพื้นผิวถนน...',
-    responsiblePerson: 'นายสมชาย ใจดี',
-    location: 'บ้านโพธิ์ หมู่ 88',
-    startDate: '1 กรกฎาคม 2568',
-    endDate: '8 ตุลาคม 2568',
-    estimatedBudget: '1,100,000 บาท',
-    images: [
-      'https://placehold.co/100x100/A0A0A0/FFFFFF?text=Image+1',
-      'https://placehold.co/100x100/A0A0A0/FFFFFF?text=Image+2',
-    ],
-    comments: [
-      { user: 'นายประเมินผล', text: 'งานล่าช้า...', date: '17/07/2568' },
-    ],
-    documents: [
-      { name: 'สัญญาจ้าง.pdf', url: '/docs/contract.pdf' },
-      { name: 'แผนงาน.xlsx', url: '/docs/plan.xlsx' },
-    ],
-  },
-  {
-    id: 2,
-    title: 'โครงการขยายถนนบ้านโพธิ์',
-    status: 'เสร็จสิ้น',
-    statusColor: 'bg-green-500',
-    lastUpdated: 'แก้ไขล่าสุด 14/07/2568 เวลา 16:00 นาที',
-    description: 'โครงการขยายถนนเพื่อรองรับการจราจรที่เพิ่มขึ้น...',
-    responsiblePerson: 'นางสาวสุดาพร มีสุข',
-    location: 'บ้านโพธิ์',
-    startDate: '1 มกราคม 2568',
-    endDate: '30 มิถุนายน 2568',
-    estimatedBudget: '850,000 บาท',
-    comments: [
-      { user: 'ผู้ดูแลระบบ', text: 'โครงการนี้เสร็จสมบูรณ์ตามแผน', date: '01/07/2568' },
-    ],
-    documents: [
-      { name: 'รายงานผล.pdf', url: '/docs/report.pdf' },
-    ],
-  },
-];
+interface Comment {
+  user: string;
+  text: string;
+  date: string;
+}
 
 export default function HomeDashboard() {
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [isSortByDateOpen, setIsSortByDateOpen] = useState(false);
   const [selectedSortByDate, setSelectedSortByDate] = useState('ใหม่ที่สุด');
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ทั้งหมด');
-
+  const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [newComment, setNewComment] = useState('');
-  const [commenterName, setCommenterName] = useState(''); // 🟨 เพิ่ม state สำหรับชื่อผู้แสดงความคิดเห็น
+  const [commenterName, setCommenterName] = useState('');
+  const [projectComments, setProjectComments] = useState<{[key: number]: Comment[]}>({});
+  const [user, setUser] = useState<any>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const userData = localStorage.getItem('user_data');
+    const userType = localStorage.getItem('user_type');
+    
+    if (!token && !userType) {
+      router.replace('/');
+      return;
+    }
+    
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        console.error('Invalid user data in localStorage');
+      }
+    }
+
+    const fetchProjects = async () => {
+  try { 
+    const { data, error } = await supabase
+      .from("projects")
+      .select(`*, activities(*), documents(*)`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return;
+    }
+
+    if (data) {
+      setProjects(data);
+    }
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+  }
+    };
+    fetchProjects();
+  },  [router]);
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return; 
+    
+    setIsLoggingOut(true);
+    
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.ok) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        localStorage.removeItem('user_type');
+        localStorage.clear();
+        
+        window.location.href = '/';
+      } else {
+        console.error('Logout failed:', data.message);
+        localStorage.clear();
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+      localStorage.clear();
+      window.location.href = '/';
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  
   const toggleSortByDate = () => {
     setIsSortByDateOpen(!isSortByDateOpen);
     setIsStatusFilterOpen(false);
   };
+  
   const toggleStatusFilter = () => {
     setIsStatusFilterOpen(!isStatusFilterOpen);
     setIsSortByDateOpen(false);
   };
+
   const selectSortByDate = (option: string) => {
     setSelectedSortByDate(option);
     setIsSortByDateOpen(false);
+
+    if (option === 'ใหม่ที่สุด') {
+      setProjects([...projects].sort((a, b) => (a.created_at! < b.created_at! ? 1 : -1)));
+    } else if (option === 'เก่าที่สุด') {
+      setProjects([...projects].sort((a, b) => (a.created_at! > b.created_at! ? 1 : -1)));
+    }
   };
+
   const selectStatusFilter = (option: string) => {
     setSelectedStatusFilter(option);
     setIsStatusFilterOpen(false);
   };
+  const navigateTo = (path: string) => router.push(path);
+
+  const fetchComments = async (projectId: number) => {
+    try {
+      const res = await fetch(`/api/comment?project_id=${projectId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProjectComments(prev => ({
+          ...prev,
+          [projectId]: data.map((c: any) => ({
+            user: c.citizen_name,
+            text: c.content,
+            date: new Date(c.comm_date).toLocaleDateString('th-TH')
+          }))
+        }));
+      } else {
+        console.error('Failed to fetch comments');
+      }
+    } catch (err) {
+      console.error('Error fetching comments:', err);
+    }
+  };
+
   const handleProjectClick = (project: Project) => {
     setSelectedProject(project);
     setShowCommentBox(false);
+    fetchComments(project.id);
   };
+
   const handleCloseProjectDetails = () => setSelectedProject(null);
 
-  const handleAddComment = () => {
-    if (newComment.trim() === '') return;
-
-    // 🟨 ตรวจสอบชื่อที่กรอก หากไม่มี ให้ใช้ค่า default
-    const currentUser = commenterName.trim() === '' ? 'ผู้ไม่ประสงค์ออกนาม' : commenterName;
-    const currentDate = new Date().toLocaleDateString('th-TH', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-
-    if (selectedProject) {
-      setSelectedProject((prev) =>
-        prev
-          ? {
-              ...prev,
-              comments: [...(prev.comments || []), { user: currentUser, text: newComment, date: currentDate }],
-            }
-          : null
-      );
+  const getStatusColor = (status: string | null) => {
+    switch (status) {
+      case 'กำลังดำเนินการ':
+        return 'bg-yellow-400';
+      case 'เสร็จสิ้น':
+        return 'bg-green-500';
+      case 'ระงับ':
+        return 'bg-gray-400';
+      default:
+        return 'bg-gray-300';
     }
-    setNewComment('');
-    setCommenterName(''); // 🟨 ล้างค่าช่องชื่อหลังจากส่ง
-    setShowCommentBox(false);
   };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatBudget = (budget: number | null) => {
+    if (!budget) return '-';
+    return budget.toLocaleString('th-TH') + ' บาท';
+  };
+
+  const handleAddComment = async () => {
+    if (newComment.trim() === '' || !selectedProject) return;
+  
+    const currentUser = commenterName.trim() === '' ? 'ผู้ไม่ประสงค์ออกนาม' : commenterName;
+  
+    try {
+      const res = await fetch('/api/comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: newComment,
+          citizen_name: currentUser,
+          project_id: selectedProject.id,
+        }),
+      });
+  
+      if (res.ok) {
+        const savedComment = await res.json();
+        setProjectComments(prev => ({
+          ...prev,
+          [selectedProject.id]: [...(prev[selectedProject.id] || []), {
+            user: savedComment.citizen_name,
+            text: savedComment.content,
+            date: new Date(savedComment.comm_date).toLocaleDateString('th-TH')
+          }]
+        }));
+        setNewComment('');
+        setCommenterName('');
+        setShowCommentBox(false);
+      } else {
+        console.error('Failed to add comment');
+      }
+    } catch (err) {
+      console.error('Error adding comment:', err);
+    }
+  };
+  
+  const filteredProjects = projects
+    .filter(project => 
+      selectedStatusFilter === 'ทั้งหมด' ? true : project.status === selectedStatusFilter
+    )
+    .filter(project =>
+      searchTerm === '' ? true : 
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (project.location && project.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (project.responsible_person && project.responsible_person.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
   return (
     <div className="min-h-screen bg-gray-100 font-inter">
+      {/* Header */}
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
           <div className="bg-white p-2 rounded-full mr-3">
             <img
               src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
-              alt="Logo"
+              alt="โลโก้"
               className="h-10 w-10 rounded-full"
             />
           </div>
           <div>
             <h1 className="text-xl font-bold">การจัดการโครงการพัฒนาเทศบาลตำบลปะโค</h1>
             <p className="text-sm">อำเภอเมืองหนองคาย จังหวัดหนองคาย</p>
+            {user && (
+              <p className="text-xs opacity-80">
+                ยินดีต้อนรับ: {user.email}
+              </p>
+            )}
           </div>
         </div>
       </header>
 
+      {/* Navbar */}
       <nav className="bg-gray-200 p-3 shadow-sm">
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center">
@@ -155,34 +309,32 @@ export default function HomeDashboard() {
             <input
               type="text"
               placeholder="ค้นหาข้อมูลที่นี่..."
-              className="p-2 pl-4 pr-10 bg-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none"
+              className="p-2 pl-4 pr-10 bg-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
             <Search className="absolute right-3 text-gray-500" size={20} />
           </div>
         </div>
       </nav>
 
-      <div className="flex">
+      <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className="w-64 bg-white p-4 shadow-lg min-h-[calc(100vh-120px)]">
+        <aside className="w-64 bg-white p-4 shadow-lg min-h-[calc(100vh-64px)]">
           <div className="mb-6">
-            <div
-              className="flex items-center justify-between p-3 bg-blue-100 rounded-md mb-2 cursor-pointer hover:bg-blue-200"
-              onClick={toggleMenu}
-            >
+            <div className="flex items-center justify-between p-3 bg-blue-100 rounded-md mb-2 cursor-pointer hover:bg-blue-200" onClick={toggleMenu}>
               <span className="font-semibold text-gray-800">เมนู</span>
-              <ChevronDown
-                className={`text-gray-600 transform transition-transform ${isMenuOpen ? 'rotate-180' : ''}`}
-                size={18}
-              />
+              <ChevronDown className={`text-gray-600 transform transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} size={18} />
             </div>
             {isMenuOpen && (
               <ul className="space-y-1">
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer">
-                  โครงการทั้งหมด
-                </li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer">
-                  ออกจากระบบ
+                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Alluser/Home')}>โครงการทั้งหมด</li>
+                <li 
+                  className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  <span>{isLoggingOut ? 'กำลังออก...' : 'ออกจากระบบ'}</span>
                 </li>
               </ul>
             )}
@@ -191,60 +343,79 @@ export default function HomeDashboard() {
 
         <main className="flex-1 p-6">
           {selectedProject ? (
-            // Project Detail
             <div className="bg-white rounded-lg shadow-md p-6 relative">
               <button
                 onClick={handleCloseProjectDetails}
-                className="absolute top-15 right-7 text-gray-500 hover:text-gray-700"
+                className="absolute top-6 right-6 text-gray-500 hover:text-gray-700"
               >
-                <XCircle size={36} />
+                <XCircle size={24} />
               </button>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">{selectedProject.title}</h2>
+
+              <div className="flex items-center justify-between mb-6 pr-10">
+                <h2 className="text-2xl font-bold text-gray-800">{selectedProject.name}</h2>
                 <div className="flex items-center">
-                  <span className={`w-3 h-3 rounded-full mr-2 ${selectedProject.statusColor}`}></span>
-                  <span className="text-gray-700 font-medium">{selectedProject.status}</span>
+                  <span className={`w-3 h-3 rounded-full mr-2 ${getStatusColor(selectedProject.status)}`}></span>
+                  <span className="text-gray-700 font-medium">{selectedProject.status || 'ไม่ระบุ'}</span>
                 </div>
               </div>
 
-              {/* Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <p className="text-gray-600 mb-2">
-                    <span className="font-semibold">รายละเอียด:</span> {selectedProject.description || '-'}
+              {/* Project Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">รหัสโครงการ:</span> {selectedProject.code || '-'}
                   </p>
-                  <p className="text-gray-600 mb-2">
-                    <span className="font-semibold">ผู้รับผิดชอบ:</span> {selectedProject.responsiblePerson || '-'}
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">หน่วยงานรับผิดชอบ:</span> {selectedProject.department || '-'}
                   </p>
-                  <p className="text-gray-600 mb-2">
+                  <p className="text-sm text-gray-600">
                     <span className="font-semibold">สถานที่:</span> {selectedProject.location || '-'}
                   </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">ผู้รับผิดชอบ:</span> {selectedProject.responsible_person || '-'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">ติดต่อ:</span> {selectedProject.contact_info || '-'}
+                  </p>
                 </div>
-                <div>
-                  <p className="text-gray-600 mb-2">
-                    <span className="font-semibold">วันที่เริ่มต้น:</span> {selectedProject.startDate || '-'}
+                <div className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">วันที่เริ่มต้น:</span> {formatDate(selectedProject.start_date)}
                   </p>
-                  <p className="text-gray-600 mb-2">
-                    <span className="font-semibold">วันที่สิ้นสุด:</span> {selectedProject.endDate || '-'}
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">วันที่สิ้นสุด:</span> {formatDate(selectedProject.end_date)}
                   </p>
-                  <p className="text-gray-600 mb-2">
-                    <span className="font-semibold">งบประมาณ:</span> {selectedProject.estimatedBudget || '-'}
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">งบประมาณ:</span> {formatBudget(selectedProject.budget)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">หมวดหมู่:</span> {selectedProject.category || '-'}
                   </p>
                 </div>
               </div>
 
-              {/* Images */}
-              {selectedProject.images && selectedProject.images.length > 0 && (
+              {/* Objective */}
+              {selectedProject.objective && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">รูปภาพ</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {selectedProject.images.map((img, i) => (
-                      <img
-                        key={i}
-                        src={img}
-                        alt={`รูปภาพ ${i + 1}`}
-                        className="w-full h-24 object-cover rounded-md shadow-sm"
-                      />
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">วัตถุประสงค์</h3>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-4 rounded-md">
+                    {selectedProject.objective}
+                  </p>
+                </div>
+              )}
+
+              {/* Activities */}
+              {selectedProject.activities && selectedProject.activities.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">กิจกรรม</h3>
+                  <div className="space-y-2">
+                    {selectedProject.activities.map((activity) => (
+                      <div key={activity.id} className="bg-blue-50 p-3 rounded-md border-l-4 border-blue-400">
+                        <p className="text-sm text-gray-800 font-medium">{activity.description}</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {formatDate(activity.start_date)} ถึง {formatDate(activity.end_date)}
+                        </p>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -255,15 +426,17 @@ export default function HomeDashboard() {
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">เอกสาร</h3>
                   <ul className="space-y-2">
-                    {selectedProject.documents.map((doc, i) => (
-                      <li key={i}>
+                    {selectedProject.documents.map((doc) => (
+                      <li key={doc.id}>
                         <a
-                          href={doc.url}
+                          href={doc.file_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center text-blue-600 hover:text-blue-800 underline"
+                          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
                         >
-                          <FileText size={18} className="mr-2" /> {doc.name}
+                          <FileText size={18} className="mr-2" /> 
+                          {doc.name}
+                          {doc.is_public && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">สาธารณะ</span>}
                         </a>
                       </li>
                     ))}
@@ -271,32 +444,33 @@ export default function HomeDashboard() {
                 </div>
               )}
 
-              {/* Comments */}
+              {/* Comments Section */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">ความคิดเห็น</h3>
                 <div className="space-y-3 mb-4">
-                  {selectedProject.comments && selectedProject.comments.length > 0 ? (
-                    selectedProject.comments.map((c, i) => (
-                      <div key={i} className="bg-gray-50 p-3 rounded-md border">
+                  {projectComments[selectedProject.id] && projectComments[selectedProject.id].length > 0 ? (
+                    projectComments[selectedProject.id].map((comment, index) => (
+                      <div key={index} className="bg-gray-50 p-3 rounded-md border">
                         <p className="text-sm font-medium text-gray-800">
-                          {c.user} <span className="text-gray-500 text-xs ml-2">{c.date}</span>
+                          {comment.user} <span className="text-gray-500 text-xs ml-2">{comment.date}</span>
                         </p>
-                        <p className="text-gray-700 text-sm mt-1">{c.text}</p>
+                        <p className="text-gray-700 text-sm mt-1">{comment.text}</p>
                       </div>
                     ))
                   ) : (
                     <p className="text-gray-500 text-sm">ยังไม่มีความคิดเห็น</p>
                   )}
                 </div>
+
                 <button
                   onClick={() => setShowCommentBox(!showCommentBox)}
-                  className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
                   <MessageSquare size={18} className="mr-2" /> แสดงความคิดเห็น
                 </button>
+
                 {showCommentBox && (
                   <div className="mt-4 p-4 bg-gray-100 rounded-md border">
-                    {/* 🟨 เพิ่มช่องกรอกชื่อ */}
                     <input
                       type="text"
                       className="w-full p-2 border rounded-md mb-2 text-black"
@@ -311,10 +485,16 @@ export default function HomeDashboard() {
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                     ></textarea>
-                    <div className="flex justify-end mt-3">
+                    <div className="flex justify-end gap-2 mt-3">
+                      <button
+                        onClick={() => setShowCommentBox(false)}
+                        className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                      >
+                        ยกเลิก
+                      </button>
                       <button
                         onClick={handleAddComment}
-                        className="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700"
+                        className="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700 transition-colors"
                       >
                         ส่ง
                       </button>
@@ -324,26 +504,139 @@ export default function HomeDashboard() {
               </div>
             </div>
           ) : (
-            // Project List
+
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">โครงการทั้งหมด</h2>
-              <div className="space-y-4">
-                {initialProjects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="bg-white border rounded-lg p-4 flex items-center justify-between hover:shadow-md cursor-pointer"
-                    onClick={() => handleProjectClick(project)}
-                  >
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">{project.title}</h3>
-                      <p className="text-sm text-gray-500">{project.lastUpdated}</p>
-                    </div>
-                    <div className="flex items-center">
-                      <span className={`w-3 h-3 rounded-full mr-2 ${project.statusColor}`}></span>
-                      <span className="text-gray-700 font-medium">{project.status}</span>
-                    </div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">โครงการทั้งหมด</h2>
+                <div className="flex space-x-4">
+                  {/* Sort Options */}
+                  <div className="flex items-center text-blue-600">
+                    <span className="font-medium">เรียงจาก</span>
                   </div>
-                ))}
+                  <div className="relative">
+                    <div
+                      className="flex items-center text-blue-600 cursor-pointer hover:text-blue-800"
+                      onClick={toggleSortByDate}
+                    >
+                      <span className="font-medium">{selectedSortByDate}</span>
+                      <ChevronDown
+                        className={`ml-1 transform transition-transform duration-200 ${
+                          isSortByDateOpen ? 'rotate-180' : ''
+                        }`}
+                        size={16}
+                      />
+                    </div>
+                    {isSortByDateOpen && (
+                      <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                        <div className="py-1">
+                          {['ใหม่ที่สุด', 'เก่าที่สุด', 'ทั้งหมด'].map((option) => (
+                            <a
+                              key={option}
+                              href="#"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                selectSortByDate(option);
+                              }}
+                            >
+                              {option}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Filter Options */}
+                  <div className="flex items-center text-blue-600">
+                    <span className="font-medium">หมวดหมู่</span>
+                  </div>
+
+                  <div className="relative">
+                    <div
+                      className="flex items-center text-blue-600 cursor-pointer hover:text-blue-800"
+                      onClick={toggleStatusFilter}
+                    >
+                      <span className="font-medium">{selectedStatusFilter}</span>
+                      <ChevronDown
+                        className={`ml-1 transform transition-transform duration-200 ${
+                          isStatusFilterOpen ? 'rotate-180' : ''
+                        }`}
+                        size={16}
+                      />
+                    </div>
+                    {isStatusFilterOpen && (
+                      <div className="absolute z-10 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                        <div className="py-1">
+                          {['ทั้งหมด', 'ระงับ', 'เสร็จสิ้น', 'กำลังดำเนินการ'].map((option) => (
+                            <a
+                              key={option}
+                              href="#"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                selectStatusFilter(option);
+                              }}
+                            >
+                              {option}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Project Cards */}
+              <div className="space-y-4">
+                {filteredProjects.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">ไม่พบโครงการที่ตรงกับเงื่อนไขที่ค้นหา</p>
+                  </div>
+                ) : (
+                  filteredProjects.map((project) => (
+                    <div
+                      key={project.id}
+                      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
+                      onClick={() => handleProjectClick(project)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-800 hover:text-blue-600 transition-colors">
+                            {project.name}
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1">
+                            เริ่ม: {formatDate(project.start_date)} | สิ้นสุด: {formatDate(project.end_date)}
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            สถานที่: {project.location || '-'} | ผู้รับผิดชอบ: {project.responsible_person || '-'}
+                          </p>
+                          {project.budget && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              งบประมาณ: {formatBudget(project.budget)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-4 ml-4">
+                          <div className="flex items-center">
+                            <span className={`w-3 h-3 rounded-full mr-2 ${getStatusColor(project.status)}`}></span>
+                            <span className="text-gray-700 font-medium text-sm">{project.status || 'ไม่ระบุ'}</span>
+                          </div>
+                          <button
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProjectClick(project);
+                            }}
+                          >
+                            <Eye size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}
