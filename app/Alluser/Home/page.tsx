@@ -89,7 +89,7 @@ export default function HomeDashboard() {
         // The parsed object must conform to the UserType interface
         setUser(JSON.parse(userData) as UserType); 
       // FIX 2: Replace 'e' with '_e' to suppress the unused variable error
-      } catch (_e) {
+      } catch (err) {
         console.error('Invalid user data in localStorage');
       }
     }

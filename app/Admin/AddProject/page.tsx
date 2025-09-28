@@ -2,9 +2,8 @@
 
 import { ChevronDown, Plus, Save, Trash2, Upload, X, LogOut } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import toast, { Toaster } from 'react-hot-toast';
-import Image from 'next/image'; // ต้อง Import Image จาก next/image
+// Removed: import Image from 'next/image'; (ใช้ img tag แทนเพื่อแก้ปัญหาการคอมไพล์)
 
 // --- Type Definitions สำหรับโปรเจกต์ (เพื่อแก้ปัญหา any) ---
 type Activity = {
@@ -37,11 +36,7 @@ type ProjectInfo = {
   contactInfo: string;
 };
 
-// สร้าง Supabase client (ไม่จำเป็นต้องใช้ใน Component นี้ แต่เก็บไว้หากคุณต้องการใช้ client-side)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-// ตัวแปร 'supabase' ถูกกำหนดค่าแต่ไม่ได้ใช้ใน AddProject จึงคอมเมนต์ไว้เพื่อแก้ Error: 'supabase' is assigned a value but never used.
-// const supabase = createClient(supabaseUrl, supabaseKey); 
+// ตัวแปร Supabase Client และ Key ถูกลบออกเพื่อแก้ unused vars warnings
 
 const STATUS_OPTIONS = [
   { status: 'กำลังดำเนินการ', color: 'bg-yellow-200 text-yellow-800 border-yellow-300', dot: 'bg-yellow-500' },
@@ -60,7 +55,10 @@ export default function AddProject() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const toggleMenu = () => setIsMenuOpen((v) => !v);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const navigateTo = (path: string) => { window.location.href = path; };
+  const navigateTo = (path: string) => { 
+    // ใช้ window.location.assign แทน window.location.href เพื่อความชัดเจนในการนำทาง
+    window.location.assign(path); 
+  };
 
   // แก้ไข Type ของ safeNumber เพื่อแก้ Error: Unexpected any. Specify a different type.
   const safeNumber = (n: string | number | null | undefined): number | null => {
@@ -177,6 +175,7 @@ export default function AddProject() {
     }
 
     try {
+      // NOTE: หากใช้ /api/saveProject ควรตรวจสอบว่าได้สร้างไฟล์นี้ขึ้นมาแล้ว
       const response = await fetch("/api/saveProject", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -210,6 +209,7 @@ export default function AddProject() {
     setIsLoggingOut(true);
     
     try {
+      // NOTE: Endpoint นี้จะถูกเรียกใช้เฉพาะในสภาพแวดล้อม Next.js
       const response = await fetch('/api/logout', {
         method: 'POST',
         headers: {
@@ -220,21 +220,22 @@ export default function AddProject() {
       const data: { message?: string, ok?: boolean } = await response.json();
 
       if (data.ok) {
+        // Clear sensitive data
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         localStorage.removeItem('user_type');
         localStorage.clear();
         
-        window.location.href = '/';
+        window.location.assign('/');
       } else {
         console.error('Logout failed:', data.message);
         localStorage.clear();
-        window.location.href = '/';
+        window.location.assign('/');
       }
     } catch (error) {
       console.error('Logout error:', error);
       localStorage.clear();
-      window.location.href = '/';
+      window.location.assign('/');
     } finally {
       setIsLoggingOut(false);
     }
@@ -247,8 +248,8 @@ export default function AddProject() {
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
           <div className="bg-white p-2 rounded-full mr-3">
-            {/* แก้ไขเป็น Image Component */}
-            <Image 
+            {/* ใช้แท็ก img มาตรฐานแทน next/image เพื่อให้คอมไพล์ได้ในสภาพแวดล้อมนี้ */}
+            <img 
                 src={PLACEHOLDER_LOGO} 
                 alt="Logo" 
                 className="h-10 w-10 rounded-full" 
@@ -275,7 +276,7 @@ export default function AddProject() {
               <ul className="space-y-1">
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Site')}>โครงการทั้งหมด</li>
                 <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/AddProject')}>เพิ่มโครงการ</li>
-                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Statistics')}>สถิติ</li> {/* แก้ไขพาธที่ถูกต้อง */}
+                <li className="p-3 text-gray-700 hover:bg-gray-100 rounded-md cursor-pointer" onClick={() => navigateTo('/Admin/Statistics')}>สถิติ</li> 
                 <li 
                   className="p-3 text-red-600 hover:bg-red-50 rounded-md cursor-pointer flex items-center space-x-2" 
                   onClick={handleLogout}
@@ -422,6 +423,7 @@ export default function AddProject() {
                     <Td center={false}>{doc.name}</Td>
                     <Td center={false}>
                       {/* doc.fileUrl อาจจะไม่ได้ถูกสร้างในโค้ดนี้, แต่ถ้ามีจะแสดงเป็น Link */}
+                      {/* หากไฟล์เป็น base64 data จะถูกแปลงเป็น data URI ในโค้ดจริง */}
                       <a href={doc.fileUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
                         {doc.name}
                       </a>
