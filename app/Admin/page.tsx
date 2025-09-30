@@ -1,0 +1,10 @@
+import React from 'react';
+
+export default function Page() {
+  return (
+    <div>
+      <h1>Project</h1>
+      {/* เพิ่มเนื้อหาของคุณที่นี่ */}
+    </div>
+  );
+}
