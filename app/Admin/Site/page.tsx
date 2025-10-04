@@ -1,10 +1,10 @@
 'use client';
 
 import { createClient } from '@supabase/supabase-js';
+import Cookies from 'js-cookie';
 import { ChevronDown, Edit, Eye, Home, LogOut, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -43,11 +43,8 @@ interface Project {
   documents?: Document[];
 }
 
-// ✅ Fix 1: Defined a clear type for the user object
 interface UserData {
   email: string;
-  // Add other properties if they exist on your user object
-  // For example: id: string; user_type: string;
 }
 
 export default function HomeDashboard() {
@@ -59,7 +56,6 @@ export default function HomeDashboard() {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ทั้งหมด');
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  // ✅ Fix 1: Use 'UserData | null' instead of 'any'
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
@@ -76,11 +72,8 @@ export default function HomeDashboard() {
 
     if (userData) {
       try {
-        // Corrected: Cast the parsed data to UserData
         setUser(JSON.parse(userData) as UserData);
-      } catch (error: unknown) { // ✅ Fix 2: Explicitly type catch variable as 'unknown'
-        // This resolves the lint warning/error about an unused catch variable if 'error' is not used, 
-        // but here it is used for logging.
+      } catch (error: unknown) {
         console.error('Invalid user data in localStorage', error);
         Cookies.remove('auth_token');
         localStorage.clear();
@@ -93,7 +86,6 @@ export default function HomeDashboard() {
     }
 
     const fetchProjects = async () => {
-      // NOTE: No changes needed in fetchProjects as fetch() returns a standard Response
       const res = await fetch('/api/projects');
       const data: Project[] = await res.json();
       setProjects(data);
@@ -114,11 +106,9 @@ export default function HomeDashboard() {
         },
       });
 
-      // NOTE: The type of 'data' is inferred from response.json()
       const data = await response.json();
 
       if (data.ok) {
-        // Clearing multiple times is redundant but kept for robustness as per original logic's intent
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         localStorage.removeItem('user_type');
@@ -130,7 +120,7 @@ export default function HomeDashboard() {
         localStorage.clear();
         window.location.href = '/';
       }
-    } catch (error: unknown) { // ✅ Standard practice to type catch as 'unknown'
+    } catch (error: unknown) {
       console.error('Logout error:', error);
       localStorage.clear();
       window.location.href = '/';
@@ -151,13 +141,10 @@ export default function HomeDashboard() {
     setIsSortByDateOpen(false);
 
     if (option === 'ใหม่ที่สุด') {
-      // Sort by descending created_at
       setProjects([...projects].sort((a, b) => (a.created_at! < b.created_at! ? 1 : -1)));
     } else if (option === 'เก่าที่สุด') {
-      // Sort by ascending created_at
       setProjects([...projects].sort((a, b) => (a.created_at! > b.created_at! ? 1 : -1)));
     }
-    // No action for 'ทั้งหมด' since sorting by date already provides an order
   };
 
   const toggleStatusFilter = () => {
@@ -175,19 +162,6 @@ export default function HomeDashboard() {
   };
 
   const navigateTo = (path: string) => router.push(path);
-
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case 'กำลังดำเนินการ':
-        return 'bg-yellow-400';
-      case 'เสร็จสิ้น':
-        return 'bg-green-500';
-      case 'ระงับ':
-        return 'bg-gray-400';
-      default:
-        return 'bg-gray-300';
-    }
-  };
 
   const toggleExpand = (id: number) => {
     setExpandedProjectId(expandedProjectId === id ? null : id);
@@ -396,35 +370,46 @@ export default function HomeDashboard() {
                 return (
                   <div
                     key={project.id}
-                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
+                    className={`border-l-8 rounded-lg p-5 shadow-md hover:shadow-xl transition-all duration-200 ${
+                      project.status === 'เสร็จสิ้น' ? 'bg-green-50 border-green-500' :
+                      project.status === 'กำลังดำเนินการ' ? 'bg-yellow-50 border-yellow-500' :
+                      project.status === 'ล่าช้า' ? 'bg-red-50 border-red-400' :
+                      project.status === 'ระงับ' ? 'bg-gray-50 border-gray-400' :
+                      'bg-white border-gray-300'
+                    }`}
                   >
                     {/* Header Section (always visible) */}
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="flex-1">
                         <h3
-                          className="text-lg font-semibold text-gray-800 cursor-pointer hover:underline"
+                          className="text-xl font-bold text-gray-900 cursor-pointer hover:text-blue-700 transition-colors"
                           onClick={() => toggleExpand(project.id)}
                         >
                           {project.name}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-base text-gray-700 mt-2 font-medium">
                           เริ่ม: {project.start_date || '-'} | สิ้นสุด: {project.end_date || '-'}
                         </p>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <span
-                          className={`w-3 h-3 rounded-full mr-2 ${getStatusColor(project.status)}`}
-                        ></span>
-                        <span className="text-gray-700 font-medium">{project.status}</span>
+                      <div className="flex items-center space-x-3">
+                        <div className={`px-4 py-2 rounded-full font-bold text-sm ${
+                          project.status === 'เสร็จสิ้น' ? 'bg-green-500 text-white' :
+                          project.status === 'กำลังดำเนินการ' ? 'bg-yellow-500 text-white' :
+                          project.status === 'ล่าช้า' ? 'bg-red-400 text-white' :
+                          project.status === 'ระงับ' ? 'bg-gray-400 text-white' :
+                          'bg-gray-300 text-gray-700'
+                        }`}>
+                          {project.status || 'ไม่ระบุ'}
+                        </div>
                         <button
-                          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center font-medium transition-colors"
                           onClick={() => router.push(`/Admin/Trace/${project.id}`)}
                         >
                           <Eye size={16} className="mr-1" />
                           ติดตาม
                         </button>
                         <button
-                          className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center"
+                          className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center font-medium transition-colors"
                           onClick={() => handleEditProject(project.id)}
                         >
                           <Edit size={16} className="mr-1" />
@@ -436,27 +421,27 @@ export default function HomeDashboard() {
                     {/* Expanded Details */}
                     {isExpanded && (
                       <div className="mt-4 space-y-3 border-t pt-3">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-700">
                           <span className="font-semibold">รหัสโครงการ:</span> {project.code || '-'}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-700">
                           <span className="font-semibold">หน่วยงานรับผิดชอบ:</span>{' '}
                           {project.department || '-'}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-700">
                           <span className="font-semibold">สถานที่:</span> {project.location || '-'}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-700">
                           <span className="font-semibold">งบประมาณ:</span> {project.budget ?? '-'} บาท
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-700">
                           <span className="font-semibold">ผู้รับผิดชอบ:</span>{' '}
                           {project.responsible_person || '-'}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-700">
                           <span className="font-semibold">ติดต่อ:</span> {project.contact_info || '-'}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-700">
                           <span className="font-semibold">วัตถุประสงค์:</span>{' '}
                           {project.objective || '-'}
                         </p>
@@ -464,8 +449,8 @@ export default function HomeDashboard() {
                         {/* Activities */}
                         {project.activities && project.activities.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-semibold text-gray-700">กิจกรรม:</h4>
-                            <ul className="list-disc list-inside text-sm text-gray-600">
+                            <h4 className="text-sm font-semibold text-gray-800">กิจกรรม:</h4>
+                            <ul className="list-disc list-inside text-sm text-gray-700">
                               {project.activities.map((a) => (
                                 <li key={a.id}>
                                   {a.description} ({a.start_date || '-'} ถึง {a.end_date || '-'})
@@ -478,7 +463,7 @@ export default function HomeDashboard() {
                         {/* Documents */}
                         {project.documents && project.documents.length > 0 && (
                           <div>
-                            <h4 className="text-sm font-semibold text-gray-700">เอกสาร:</h4>
+                            <h4 className="text-sm font-semibold text-gray-800">เอกสาร:</h4>
                             <ul className="list-disc list-inside text-sm text-blue-600">
                               {project.documents.map((d) => (
                                 <li key={d.id}>

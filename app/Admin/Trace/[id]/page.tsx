@@ -29,7 +29,7 @@ interface StatusUpdate {
   picture?: string;
   project_id: number;
   activity_id?: number;
-  status: 'เสร็จสิ้น' | 'กำลังดำเนินการ' | 'รอดำเนินการ';
+  status: 'เสร็จสิ้น' | 'กำลังดำเนินการ' | 'รอดำเนินการ' | 'ล่าช้า';
 }
 
 interface Project {
@@ -264,7 +264,7 @@ export default function TracePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 font-inter flex flex-col">
+    <div className="min-h-screen bg-blue-200 font-inter flex flex-col">
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
           <div className="bg-white p-2 rounded-full mr-3">
@@ -455,7 +455,7 @@ export default function TracePage() {
                 {statusUpdateFile && <span className="text-sm text-gray-800 font-medium ml-3">{statusUpdateFile.name}</span>}
               </div>
               <div className="flex justify-end">
-                <button onClick={handleUpdateFormSubmit} className="bg-blue-500 text-white font-bold px-6 py-2 rounded-lg hover:bg-blue-600">บันทึก</button>
+                <button onClick={handleUpdateFormSubmit} className="bg-green-500 text-white font-bold px-6 py-2 rounded-lg hover:bg-green-700">บันทึก</button>
               </div>
             </div>
           </div>

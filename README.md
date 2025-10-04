@@ -34,3 +34,71 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+```
+development-projects-master
+├─ app
+│  ├─ Admin
+│  │  ├─ AddProject
+│  │  │  └─ page.tsx
+│  │  ├─ Editproject
+│  │  │  ├─ page.tsx
+│  │  │  └─ [id]
+│  │  │     └─ page.tsx
+│  │  ├─ Login
+│  │  │  └─ page.tsx
+│  │  ├─ page.tsx
+│  │  ├─ Site
+│  │  │  └─ page.tsx
+│  │  ├─ Statistics
+│  │  │  └─ page.tsx
+│  │  └─ Trace
+│  │     ├─ page.tsx
+│  │     └─ [id]
+│  │        └─ page.tsx
+│  ├─ Alluser
+│  │  ├─ Home
+│  │  │  └─ page.tsx
+│  │  └─ page.tsx
+│  ├─ api
+│  │  ├─ comment
+│  │  │  └─ route.ts
+│  │  ├─ login
+│  │  │  └─ route.ts
+│  │  ├─ logout
+│  │  │  └─ route.ts
+│  │  ├─ projects
+│  │  │  └─ route.ts
+│  │  ├─ route.ts
+│  │  ├─ saveProject
+│  │  │  └─ route.ts
+│  │  ├─ status
+│  │  │  └─ route.ts
+│  │  ├─ traceProject
+│  │  │  └─ route.ts
+│  │  └─ updateProject
+│  │     └─ route.ts
+│  ├─ favicon.ico
+│  ├─ globals.css
+│  ├─ layout.tsx
+│  └─ page.tsx
+├─ eslint.config.mjs
+├─ middleware.ts
+├─ next.config.ts
+├─ package-lock.json
+├─ package.json
+├─ postcss.config.mjs
+├─ public
+│  ├─ file.svg
+│  ├─ globe.svg
+│  ├─ images
+│  │  └─ image1.jpg
+│  ├─ next.svg
+│  ├─ vercel.svg
+│  └─ window.svg
+├─ README.md
+├─ src
+│  └─ supabase.ts
+└─ tsconfig.json
+
+```

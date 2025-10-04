@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ChevronDown, LogOut, Plus, Save, Trash2, Upload, X } from 'lucide-react';
@@ -33,7 +34,6 @@ type ProjectInfo = {
   responsiblePerson: string;
   contactInfo: string;
 };
-
 
 const STATUS_OPTIONS = [
   { status: 'กำลังดำเนินการ', color: 'bg-yellow-200 text-yellow-800 border-yellow-300', dot: 'bg-yellow-500' },
@@ -73,7 +73,6 @@ export default function AddProject() {
     return isNaN(num) ? null : num;
   };
 
-  /** Project Info */
   const [projectInfo, setProjectInfo] = useState<ProjectInfo>({
     projName: '',
     projCode: '',
@@ -92,15 +91,12 @@ export default function AddProject() {
     setProjectInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  /** Activities */
   const [activities, setActivities] = useState<Activity[]>([{ id: 1, description: '', startDate: '', endDate: '' }]);
   const addActivity = () => setActivities(prev => [...prev, { id: nextId(prev), description: '', startDate: '', endDate: '' }]);
-  const removeLastActivity = () => setActivities(prev => prev.length > 0 ? prev.slice(0, -1) : prev);
   const handleActivityChange = (id: number, field: keyof Omit<Activity, 'id'>, value: string) => {
     setActivities(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
   };
 
-  /** Documents */
   const [newDocument, setNewDocument] = useState<{ name: string; file: File | null }>({ name: '', file: null });
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
 
@@ -171,8 +167,8 @@ export default function AddProject() {
   const handleCategorySelect = (category: string) => { 
     handleProjectChange('category', category); 
     setIsCategoryDropdownOpen(false); 
-};
-  /** Save Project */
+  };
+
   const handleSave = async () => {
     if (!projectInfo.projName || !projectInfo.projCode || !projectInfo.department) {
       toast.error("กรุณากรอกข้อมูลโครงการให้ครบ");
@@ -221,20 +217,13 @@ export default function AddProject() {
       const data: { message?: string, ok?: boolean } = await response.json();
 
       if (data.ok) {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        localStorage.removeItem('user_type');
-        localStorage.clear();
-        
         window.location.assign('/');
       } else {
         console.error('Logout failed:', data.message);
-        localStorage.clear();
         window.location.assign('/');
       }
     } catch (error) {
       console.error('Logout error:', error);
-      localStorage.clear();
       window.location.assign('/');
     } finally {
       setIsLoggingOut(false);
@@ -242,9 +231,9 @@ export default function AddProject() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 font-inter flex flex-col">
+    <div className="min-h-screen bg-blue-200 font-inter flex flex-col">
       <Toaster position="top-right" />
-      {/* Header */}
+      
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
           <div className="bg-white p-2 rounded-full mr-3">
@@ -264,7 +253,6 @@ export default function AddProject() {
       </header>
 
       <div className="flex flex-1">
-        {/* Sidebar */}
         <aside className="w-64 bg-white p-4 shadow-lg min-h-[calc(100vh-64px)]">
           <div className="mb-6">
             <div className="flex items-center justify-between p-3 bg-blue-100 rounded-md mb-2 cursor-pointer hover:bg-blue-200" onClick={toggleMenu}>
@@ -288,173 +276,199 @@ export default function AddProject() {
           </div>
         </aside>
 
-        {/* Main */}
-        <main className="flex-1 p-6 space-y-8 overflow-y-auto">
-          {/* Project Info */}
-          <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+        <main className="flex-1 p-6 overflow-y-auto">
+          <div className="bg-white p-6 rounded-lg shadow-md space-y-8">
             <h2 className="text-2xl font-semibold text-gray-800">เพิ่มโครงการใหม่</h2>
-            <Field label="ชื่อโครงการ">
-              <input type="text" value={projectInfo.projName} onChange={e => handleProjectChange('projName', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
-            </Field>
-            <Field label="รหัสโครงการ">
-              <input type="text" value={projectInfo.projCode} onChange={e => handleProjectChange('projCode', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
-            </Field>
-            <Field label="หน่วยงาน">
-              <input type="text" value={projectInfo.department} onChange={e => handleProjectChange('department', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
-            </Field>
-            <Field label="สถานที่">
-              <input type="text" value={projectInfo.location} onChange={e => handleProjectChange('location', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
-            </Field>
-            <div className="flex space-x-2">
-              <Field label="วันที่เริ่มต้น">
-                <input type="date" value={projectInfo.startDate} onChange={e => handleProjectChange('startDate', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+            
+            <div className="space-y-4">
+              <Field label="ชื่อโครงการ">
+                <input type="text" value={projectInfo.projName} onChange={e => handleProjectChange('projName', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
               </Field>
-              <Field label="วันที่สิ้นสุด">
-                <input type="date" value={projectInfo.endDate} onChange={e => handleProjectChange('endDate', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+              <Field label="รหัสโครงการ">
+                <input type="text" value={projectInfo.projCode} onChange={e => handleProjectChange('projCode', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
               </Field>
-            </div>
-            <Field label="วัตถุประสงค์">
-              <textarea value={projectInfo.objective} onChange={e => handleProjectChange('objective', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" rows={3}></textarea>
-            </Field>
-
-            {/* Status */}
-            <div className="flex items-center space-x-4">
-              <label className="text-gray-700">สถานะ:</label>
-              <div className={`flex items-center px-4 py-2 rounded-full border cursor-pointer ${statusMeta.color}`} onClick={() => setIsStatusDropdownOpen(v => !v)}>
-                <div className={`w-3 h-3 rounded-full mr-2 ${statusMeta.dot}`}></div>
-                {selectedStatus}
-                <ChevronDown size={16} className={`ml-2 transform transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+              <Field label="หน่วยงาน">
+                <input type="text" value={projectInfo.department} onChange={e => handleProjectChange('department', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+              </Field>
+              <Field label="สถานที่">
+                <input type="text" value={projectInfo.location} onChange={e => handleProjectChange('location', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+              </Field>
+              <div className="flex space-x-2">
+                <Field label="วันที่เริ่มต้น">
+                  <input type="date" value={projectInfo.startDate} onChange={e => handleProjectChange('startDate', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+                </Field>
+                <Field label="วันที่สิ้นสุด">
+                  <input type="date" value={projectInfo.endDate} onChange={e => handleProjectChange('endDate', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+                </Field>
               </div>
-              {isStatusDropdownOpen && (
-                <ul className="absolute mt-10 w-48 bg-white border rounded shadow z-10">
-                  {STATUS_OPTIONS.map(opt => (
-                    <li key={opt.status} className="px-4 py-2 cursor-pointer hover:bg-gray-100 flex items-center" onClick={() => handleStatusSelect(opt.status)}>
-                      <div className={`w-3 h-3 rounded-full mr-2 ${opt.dot}`}></div>
-                      {opt.status}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+              <Field label="วัตถุประสงค์">
+                <textarea value={projectInfo.objective} onChange={e => handleProjectChange('objective', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" rows={3}></textarea>
+              </Field>
 
-            <Field label="หมวดหมู่">
-              <div className="relative">
-                <div 
-                  className="w-full p-2 border border-gray-300 rounded-md text-black cursor-pointer flex items-center justify-between bg-white"
-                  onClick={() => setIsCategoryDropdownOpen(v => !v)}
-                >
-                  <span>{projectInfo.category || 'เลือกหมวดหมู่'}</span>
-                  <ChevronDown size={16} className={`transform transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+              <div className="flex items-center space-x-4">
+                <label className="text-gray-700">สถานะ:</label>
+                <div className={`flex items-center px-4 py-2 rounded-full border cursor-pointer ${statusMeta.color}`} onClick={() => setIsStatusDropdownOpen(v => !v)}>
+                  <div className={`w-3 h-3 rounded-full mr-2 ${statusMeta.dot}`}></div>
+                  {selectedStatus}
+                  <ChevronDown size={16} className={`ml-2 transform transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
                 </div>
-                {isCategoryDropdownOpen && (
-                  <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    {CATEGORY_OPTIONS.map(cat => (
-                      <li 
-                        key={cat} 
-                        className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-black"
-                        onClick={() => handleCategorySelect(cat)}
-                      >
-                        {cat}
+                {isStatusDropdownOpen && (
+                  <ul className="absolute mt-10 w-48 bg-white border rounded shadow z-10">
+                    {STATUS_OPTIONS.map(opt => (
+                      <li key={opt.status} className="px-4 py-2 cursor-pointer text-black hover:bg-gray-100 flex items-center" onClick={() => handleStatusSelect(opt.status)}>
+                        <div className={`w-3 h-3 rounded-full mr-2 ${opt.dot}`}></div>
+                        {opt.status}
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
-            </Field>
-            <Field label="งบประมาณ">
-              <input type="text" value={projectInfo.budget} onChange={e => handleProjectChange('budget', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
-            </Field>
-            <Field label="ผู้รับผิดชอบ">
-              <input type="text" value={projectInfo.responsiblePerson} onChange={e => handleProjectChange('responsiblePerson', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
-            </Field>
-            <Field label="ข้อมูลติดต่อ">
-              <input type="text" value={projectInfo.contactInfo} onChange={e => handleProjectChange('contactInfo', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
-            </Field>
 
-            <div className="flex space-x-2">
-              <button onClick={handleSave} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center"><Save size={18} className="mr-2" /> บันทึก</button>
-              <button onClick={() => navigateTo('/Admin/Site')} className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md flex items-center"><X size={18} className="mr-2" /> ยกเลิก</button>
+              <Field label="หมวดหมู่">
+                <div className="relative">
+                  <div 
+                    className="w-full p-2 border border-gray-300 rounded-md text-black cursor-pointer flex items-center justify-between bg-white"
+                    onClick={() => setIsCategoryDropdownOpen(v => !v)}
+                  >
+                    <span>{projectInfo.category || 'เลือกหมวดหมู่'}</span>
+                    <ChevronDown size={16} className={`transform transition-transform ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                  {isCategoryDropdownOpen && (
+                    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {CATEGORY_OPTIONS.map(cat => (
+                        <li 
+                          key={cat} 
+                          className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-black"
+                          onClick={() => handleCategorySelect(cat)}
+                        >
+                          {cat}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </Field>
+              <Field label="งบประมาณ">
+                <input type="text" value={projectInfo.budget} onChange={e => handleProjectChange('budget', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+              </Field>
+              <Field label="ผู้รับผิดชอบ">
+                <input type="text" value={projectInfo.responsiblePerson} onChange={e => handleProjectChange('responsiblePerson', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+              </Field>
+              <Field label="ข้อมูลติดต่อ">
+                <input type="text" value={projectInfo.contactInfo} onChange={e => handleProjectChange('contactInfo', e.target.value)} className="w-full p-2 border border-gray-300 rounded-md text-black" />
+              </Field>
             </div>
-          </div>
 
-          {/* Activities Section */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4 text-black">กิจกรรม</h2>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead>
-                <tr>
-                  <Th center={false}>ลำดับ</Th>
-                  <Th center={false}>รายละเอียด</Th>
-                  <Th center={false}>ระยะเวลา</Th>
-                </tr>
-              </thead>
-              <tbody>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">กิจกรรม</h2>
+                <button onClick={addActivity} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-600">
+                  <Plus size={18} className="mr-1" /> เพิ่มกิจกรรม
+                </button>
+              </div>
+              
+              <div className="space-y-3">
                 {activities.map(act => (
-                  <tr key={act.id}>
-                    <Td center={false}>{act.id}</Td>
-                    <Td center={false}><input type="text" value={act.description} onChange={e => handleActivityChange(act.id, 'description', e.target.value)} className="w-full p-2 border rounded-md" /></Td>
-                    <Td center={false} className="flex space-x-2">
-                      <input type="date" value={act.startDate} onChange={e => handleActivityChange(act.id, 'startDate', e.target.value)} className="p-2 border rounded-md" />
-                      <input type="date" value={act.endDate} onChange={e => handleActivityChange(act.id, 'endDate', e.target.value)} className="p-2 border rounded-md" />
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="flex space-x-2 mt-2">
-              <button onClick={addActivity} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center"><Plus size={18} className="mr-1" /> เพิ่ม</button>
-              <button onClick={removeLastActivity} className="bg-red-400 text-white px-4 py-2 rounded-md flex items-center"><X size={18} className="mr-1" /> ลบ</button>
-            </div>
-          </div>
-
-          {/* Documents Section */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4 text-black">เอกสาร</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 ">
-              <Field label="ชื่อเอกสาร">
-                <input type="text" value={newDocument.name} onChange={e => setNewDocument(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded-md text-black" />
-              </Field>
-              <Field label="ไฟล์เอกสาร">
-                <label htmlFor="file-upload" className="flex items-center justify-center p-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 text-gray-600">
-                  <Upload size={18} className="mr-2" />
-                  {newDocument.file ? newDocument.file.name : 'Upload file'}
-                  <input type="file" id="file-upload" className="hidden" onChange={handleFileUpload} />
-                </label>
-              </Field>
-            </div>
-            <button onClick={addDocument} className="bg-blue-500 text-white px-4 py-2 rounded-md">บันทึกเอกสาร</button>
-
-            <table className="min-w-full divide-y divide-gray-200 mt-4">
-              <thead>
-                <tr>
-                  <Th center={true}>สาธารณะ</Th>
-                  <Th center={false}>ชื่อ</Th>
-                  <Th center={false}>เอกสาร</Th>
-                  <Th center={false}>ลบ</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {documents.map(doc => (
-                  <tr key={doc.id}>
-                    <Td center={true}>
-                      <input type="checkbox" checked={!!doc.isPublic} onChange={() => handlePublicSelect(doc.id)} />
-                    </Td>
-                    <Td center={false}>{doc.name}</Td>
-                    <Td center={false}>
-                      <a href={doc.fileUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                        {doc.name}
-                      </a>
-                    </Td>
-                    <Td center={false}>
-                      <button onClick={() => handleDeleteDocument(doc.id)} className="text-red-600 hover:text-red-900">
+                  <div key={act.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="flex justify-between items-start mb-3">
+                      <label className="text-gray-700 font-medium">รายละเอียดกิจกรรม</label>
+                      <button 
+                        onClick={() => setActivities(prev => prev.filter(a => a.id !== act.id))} 
+                        className="text-red-600 hover:text-red-900 flex items-center"
+                        title="ลบกิจกรรม"
+                      >
                         <Trash2 size={18} />
                       </button>
-                    </Td>
-                  </tr>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={act.description} 
+                      onChange={e => handleActivityChange(act.id, 'description', e.target.value)} 
+                      className="w-full p-2 border border-gray-300 rounded-md mb-3 text-black" 
+                      placeholder="กรอกรายละเอียดกิจกรรม"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm text-gray-600 mb-1 block">วันที่เริ่มต้น</label>
+                        <input 
+                          type="date" 
+                          value={act.startDate} 
+                          onChange={e => handleActivityChange(act.id, 'startDate', e.target.value)} 
+                          className="w-full p-2 border border-gray-300 rounded-md text-black" 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-600 mb-1 block">วันที่สิ้นสุด</label>
+                        <input 
+                          type="date" 
+                          value={act.endDate} 
+                          onChange={e => handleActivityChange(act.id, 'endDate', e.target.value)} 
+                          className="w-full p-2 border border-gray-300 rounded-md text-black" 
+                        />
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800">เอกสาร</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <Field label="ชื่อเอกสาร">
+                  <input type="text" value={newDocument.name} onChange={e => setNewDocument(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded-md text-black" />
+                </Field>
+                <Field label="ไฟล์เอกสาร">
+                  <label htmlFor="file-upload" className="flex items-center justify-center p-2 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 text-gray-600">
+                    <Upload size={18} className="mr-2" />
+                    {newDocument.file ? newDocument.file.name : 'Upload file'}
+                    <input type="file" id="file-upload" className="hidden" onChange={handleFileUpload} />
+                  </label>
+                </Field>
+              </div>
+              <button onClick={addDocument} className="bg-blue-500 text-white px-4 py-2 rounded-md">บันทึกเอกสาร</button>
+
+              <table className="min-w-full divide-y divide-gray-200 mt-4">
+                <thead>
+                  <tr>
+                    <Th center={true}>สาธารณะ</Th>
+                    <Th center={false}>ชื่อ</Th>
+                    <Th center={false}>เอกสาร</Th>
+                    <Th center={false}>ลบ</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {documents.map(doc => (
+                    <tr key={doc.id}>
+                      <Td center={true}>
+                        <input type="checkbox" checked={!!doc.isPublic} onChange={() => handlePublicSelect(doc.id)} />
+                      </Td>
+                      <Td center={false}>{doc.name}</Td>
+                      <Td center={false}>
+                        <a href={doc.fileUrl || '#'} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                          {doc.name}
+                        </a>
+                      </Td>
+                      <Td center={false}>
+                        <button onClick={() => handleDeleteDocument(doc.id)} className="text-red-600 hover:text-red-900">
+                          <Trash2 size={18} />
+                        </button>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4 border-t">
+              <button onClick={() => navigateTo('/Admin/Site')} className="bg-red-600 text-white px-6 py-2 rounded-md flex items-center hover:bg-red-700">
+                <X size={18} className="mr-2" /> ยกเลิก
+              </button>
+              <button onClick={handleSave} className="bg-green-500 text-white px-6 py-2 rounded-md flex items-center hover:bg-green-700">
+                <Save size={18} className="mr-2" /> บันทึก
+              </button>
+            </div>
           </div>
         </main>
       </div>

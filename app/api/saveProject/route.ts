@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
 
 // --- Custom Types for Strong Typing ---
 
@@ -129,12 +129,8 @@ export async function POST(req: Request) {
       for (const d of documents) {
         if (!d.file) throw new Error(`เอกสาร ${d.name} ไม่มีไฟล์`);
       
-        // สร้าง Buffer จาก base64
         const fileBuffer = Buffer.from(d.file.replace(/^data:.+;base64,/, ''), "base64");
         
-        // ใช้ crypto.randomUUID() แทนการใช้ crypto ใน Node.js runtime
-        // Note: Next.js 'crypto' in Node.js runtime is global but better to be explicit or use a library if available.
-        // Assuming global 'crypto' or 'node:crypto' is available in 'nodejs' runtime.
         const filePath = `project-files/${crypto.randomUUID()}-${d.name}`; 
 
         const { error: uploadError } = await supabase.storage

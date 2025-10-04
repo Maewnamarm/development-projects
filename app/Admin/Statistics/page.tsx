@@ -1,10 +1,10 @@
 'use client';
 
+import Cookies from 'js-cookie';
 import { ChevronDown, Home, LogOut, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import Cookies from 'js-cookie';
 
 type Project = {
   id: number;
@@ -16,18 +16,14 @@ type Project = {
 type PieDatum = { name: string; value: number };
 type BarDatum = { name: string; count: number };
 
-// ✅ Fix 1: New type definition for user data (replaced 'any')
 type UserData = {
   email: string;
-  // Add other properties if they exist on your user object (e.g., id, name)
 };
 
-// ✅ Fix 4: Create a specific type for the Recharts PieChart label function arguments
 type RechartsPieLabelEntry = {
   name?: string;
   percent?: number;
   value?: number;
-  // Recharts passes many props, defining the ones we use is sufficient
   cx?: number;
   cy?: number;
   midAngle?: number;
@@ -60,7 +56,6 @@ export default function StatisticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  // ✅ Fix 1: Use UserData | null
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -70,6 +65,7 @@ export default function StatisticsDashboard() {
     'กำลังดำเนินการ': '#FFBB28',
     'เสร็จสิ้น': '#00C49F',
     'ระงับ': '#FF8042',
+    'ล่าช้า': '#FF6B6B',
   };
 
   const fetchProjects = async () => {
@@ -80,8 +76,6 @@ export default function StatisticsDashboard() {
       const data: Project[] = await response.json();
       setProjects(data || []);
       setError(null);
-      // ✅ Fix 2: 'err' is now explicitly typed as 'unknown' in the catch block 
-      // and handled correctly in the original code. No further change needed here.
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'เกิดข้อผิดพลาด';
       console.error('Error fetching projects:', err);
@@ -104,9 +98,8 @@ export default function StatisticsDashboard() {
 
     if (userData) {
       try {
-        // ✅ Corrected: Cast the parsed data to UserData
         setUser(JSON.parse(userData) as UserData);
-      } catch (error: unknown) { // ✅ Fix 3: Explicitly type catch variable 'error' as 'unknown'
+      } catch (error: unknown) {
         console.error('Invalid user data in localStorage', error);
         Cookies.remove('auth_token');
         localStorage.clear();
@@ -144,14 +137,11 @@ export default function StatisticsDashboard() {
         
         window.location.href = '/';
       } else {
-        // NOTE: No changes needed here as 'data' is inferred from response.json()
         console.error('Logout failed:', data.message);
         localStorage.clear();
         window.location.href = '/';
       }
     } catch (error) {
-      // NOTE: No change needed here as catch is outside an async function where we use await, 
-      // but explicitly typing as 'unknown' is best practice if we were using it: catch (error: unknown)
       console.error('Logout error:', error);
       localStorage.clear();
       window.location.href = '/';
@@ -174,6 +164,7 @@ export default function StatisticsDashboard() {
         'กำลังดำเนินการ': 0,
         'เสร็จสิ้น': 0,
         'ระงับ': 0,
+        'ล่าช้า': 0,
       };
 
       filteredProjects.forEach(project => {
@@ -334,7 +325,7 @@ export default function StatisticsDashboard() {
             {!loading && !error && (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
                   <div className="bg-blue-100 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold text-blue-800">โครงการทั้งหมด</h3>
                     <p className="text-2xl font-bold text-blue-900">{totalProjects}</p>
@@ -357,12 +348,21 @@ export default function StatisticsDashboard() {
                       ({getPercentage(pieChartData.find(item => item.name === 'เสร็จสิ้น')?.value || 0)}%)
                     </p>
                   </div>
-                  <div className="bg-orange-100 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold text-orange-800">ระงับ</h3>
-                    <p className="text-2xl font-bold text-orange-900">
+                  <div className="bg-red-100 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-red-800">ล่าช้า</h3>
+                    <p className="text-2xl font-bold text-red-900">
+                      {pieChartData.find(item => item.name === 'ล่าช้า')?.value || 0}
+                    </p>
+                    <p className="text-sm text-red-700">
+                      ({getPercentage(pieChartData.find(item => item.name === 'ล่าช้า')?.value || 0)}%)
+                    </p>
+                  </div>
+                  <div className="bg-gray-100 p-4 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-800">ระงับ</h3>
+                    <p className="text-2xl font-bold text-gray-900">
                       {pieChartData.find(item => item.name === 'ระงับ')?.value || 0}
                     </p>
-                    <p className="text-sm text-orange-700">
+                    <p className="text-sm text-gray-700">
                       ({getPercentage(pieChartData.find(item => item.name === 'ระงับ')?.value || 0)}%)
                     </p>
                   </div>
@@ -403,7 +403,7 @@ export default function StatisticsDashboard() {
                             fill="#8884d8"
                             dataKey="value"
                             nameKey="name" 
-                            label={(entry: RechartsPieLabelEntry) => // ✅ Fix 4: Use the defined type
+                            label={(entry: RechartsPieLabelEntry) =>
                               `${entry.name ?? ''} (${((entry.percent ?? 0) * 100).toFixed(1)}%)`
                             }
                           >
