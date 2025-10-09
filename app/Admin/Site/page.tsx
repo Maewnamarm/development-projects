@@ -181,31 +181,26 @@ export default function HomeDashboard() {
     );
 
   return (
-    <div className="min-h-screen bg-gray-100 font-inter">
+    <div className="min-h-screen bg-blue-200 font-inter">
       {/* Header */}
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
-          <div className="bg-white p-2 rounded-full mr-3">
+          <div className="bg-white rounded-full mr-3">
             <img
-              src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
-              alt="โลโก้"
-              className="h-10 w-10 rounded-full"
+              src="/images/logo.jpg"
+              alt="Logo เทศบาลตำบลปะโค"
+              className="h-15 w-15 rounded-full"
             />
           </div>
           <div>
             <h1 className="text-xl font-bold">การจัดการโครงการพัฒนาเทศบาลตำบลปะโค</h1>
             <p className="text-sm">อำเภอเมืองหนองคาย จังหวัดหนองคาย</p>
-            {user && (
-              <p className="text-xs opacity-80">
-                ยินดีต้อนรับ: {user.email}
-              </p>
-            )}
           </div>
         </div>
       </header>
 
       {/* Navbar */}
-      <nav className="bg-gray-200 p-3 shadow-sm">
+      <nav className="bg-blue-300 p-3 shadow-sm">
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center">
             <Home className="text-gray-600 mr-2" size={18} />
@@ -215,7 +210,7 @@ export default function HomeDashboard() {
             <input
               type="text"
               placeholder="ค้นหาข้อมูลที่นี่..."
-              className="p-2 pl-4 pr-10 bg-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
+              className="p-2 pl-4 pr-10 bg-white text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -279,8 +274,8 @@ export default function HomeDashboard() {
               <h2 className="text-2xl font-bold text-gray-800">โครงการทั้งหมด</h2>
               <div className="flex space-x-4">
                 {/* Sort */}
-                <div className="flex items-center text-blue-600">
-                  <span className="font-medium">เรียงจาก</span>
+                <div className="flex items-center text-black">
+                  <span className="font-medium">เรียงจาก :</span>
                 </div>
 
                 <div className="relative">
@@ -297,7 +292,7 @@ export default function HomeDashboard() {
                     />
                   </div>
                   {isSortByDateOpen && (
-                    <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                    <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-gray-400 ring-opacity-5">
                       <div className="py-1">
                         {['ใหม่ที่สุด', 'เก่าที่สุด', 'ทั้งหมด'].map((option) => (
                           <a
@@ -318,8 +313,8 @@ export default function HomeDashboard() {
                 </div>
 
                 {/* Filter */}
-                <div className="flex items-center text-blue-600">
-                  <span className="font-medium">หมวดหมู่</span>
+                <div className="flex items-center text-black">
+                  <span className="font-medium">สถานะ :</span>
                 </div>
 
                 <div className="relative">
@@ -336,13 +331,14 @@ export default function HomeDashboard() {
                     />
                   </div>
                   {isStatusFilterOpen && (
-                    <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                    <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-gray-400 ring-opacity-5">
                       <div className="py-1">
                         {[
-                          'ระงับ',
-                          'เสร็จสิ้น',
-                          'กำลังดำเนินการ',
                           'ทั้งหมด',
+                          'กำลังดำเนินการ',
+                          'เสร็จสิ้น',
+                          'ระงับ',
+                          'ล่าช้า'
                         ].map((option) => (
                           <a
                             key={option}

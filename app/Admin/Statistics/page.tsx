@@ -1,7 +1,7 @@
 'use client';
 
 import Cookies from 'js-cookie';
-import { ChevronDown, Home, LogOut, Search } from 'lucide-react';
+import { ChevronDown, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { Bar, BarChart, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -206,50 +206,22 @@ export default function StatisticsDashboard() {
   const getPercentage = (value: number) => totalProjects > 0 ? ((value / totalProjects) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen bg-blue-200 font-sans">
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
-          <div className="bg-white p-2 rounded-full mr-3">
+          <div className="bg-white rounded-full mr-3">
             <img
-              src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
-              alt="โลโก้"
-              className="h-10 w-10 rounded-full"
-              onError={(e) => {
-                e.currentTarget.src = 'https://placehold.co/40x40/ffffff/000000?text=LOGO';
-              }}
+              src="/images/logo.jpg"
+              alt="Logo เทศบาลตำบลปะโค"
+              className="h-15 w-15 rounded-full"
             />
           </div>
           <div>
             <h1 className="text-xl font-bold">การจัดการโครงการพัฒนาเทศบาลตำบลปะโค</h1>
             <p className="text-sm">อำเภอเมืองหนองคาย จังหวัดหนองคาย</p>
-            {user && (
-              <p className="text-xs opacity-80">
-                ยินดีต้อนรับ: {user.email}
-              </p>
-            )}
           </div>
         </div>
       </header>
-
-      <nav className="bg-gray-200 p-3 shadow-sm">
-        <div className="flex items-center justify-between px-4">
-          <div className="flex items-center">
-            <Home className="text-gray-600 mr-2" size={18} />
-            <span className="text-gray-700 font-medium">หน้าหลัก</span>
-          </div>
-          <div className="relative flex items-center bg-gray-300 rounded-md overflow-hidden">
-            <input
-              type="text"
-              placeholder="ค้นหาข้อมูลที่นี่..."
-              className="p-2 pl-4 pr-10 bg-gray-300 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            <Search className="absolute right-3 text-gray-500" size={20} />
-          </div>
-        </div>
-      </nav>
-
       <div className="flex">
         {/* Sidebar */}
         <aside className="w-64 bg-white p-4 shadow-lg min-h-[calc(100vh-120px)]">

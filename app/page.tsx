@@ -224,15 +224,15 @@ export default function HomePage() {
     );
 
   return (
-    <div className="min-h-screen bg-gray-100 font-inter">
+    <div className="min-h-screen bg-blue-200  font-inter">
       {/* Header */}
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
-          <div className="bg-white p-2 rounded-full mr-3">
+          <div className="bg-white rounded-full mr-3">
             <img
-              src="https://placehold.co/40x40/ffffff/000000?text=LOGO"
-              alt="โลโก้"
-              className="h-10 w-10 rounded-full"
+              src="/images/logo.jpg"
+              alt="Logo เทศบาลตำบลปะโค"
+              className="h-15 w-15 rounded-full"
             />
           </div>
           <div>
@@ -245,12 +245,12 @@ export default function HomePage() {
           className="flex items-center bg-white text-blue-800 px-4 py-2 rounded-md hover:bg-blue-50 transition-colors font-medium"
         >
           <LogIn size={18} className="mr-2" />
-          เข้าสู่ระบบ
+          เข้าสู่ระบบสำหรับเจ้าหน้าที่
         </button>
       </header>
 
       {/* Search Bar */}
-      <nav className="bg-gray-200 p-4 shadow-sm">
+      <nav className="bg-blue-300 p-4 shadow-sm">
         <div className="max-w-7xl mx-auto">
           <div className="relative flex items-center bg-white rounded-lg overflow-hidden shadow-md">
             <Search className="absolute left-4 text-gray-400" size={24} />
@@ -431,8 +431,8 @@ export default function HomePage() {
                 <h2 className="text-3xl font-bold text-gray-900">โครงการทั้งหมด</h2>
                 <div className="flex space-x-4">
                   {/* Sort Options */}
-                  <div className="flex items-center text-blue-600">
-                    <span className="font-medium">เรียงจาก</span>
+                  <div className="flex items-center text-black ">
+                    <span className="font-medium">เรียงจาก :</span>
                   </div>
                   <div className="relative">
                     <div
@@ -448,7 +448,7 @@ export default function HomePage() {
                       />
                     </div>
                     {isSortByDateOpen && (
-                      <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                      <div className="absolute z-10 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-gray-400 ring-opacity-5">
                         <div className="py-1">
                           {['ใหม่ที่สุด', 'เก่าที่สุด', 'ทั้งหมด'].map((option) => (
                             <a
@@ -469,8 +469,8 @@ export default function HomePage() {
                   </div>
 
                   {/* Filter Options */}
-                  <div className="flex items-center text-blue-600">
-                    <span className="font-medium">หมวดหมู่</span>
+                  <div className="flex items-center text-black">
+                    <span className="font-medium">หมวดหมู่ :</span>
                   </div>
 
                   <div className="relative">
@@ -487,9 +487,9 @@ export default function HomePage() {
                       />
                     </div>
                     {isStatusFilterOpen && (
-                      <div className="absolute z-10 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5">
+                      <div className="absolute z-10 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-gray-400 ring-opacity-5">
                         <div className="py-1">
-                          {['ทั้งหมด', 'ระงับ', 'เสร็จสิ้น', 'กำลังดำเนินการ'].map((option) => (
+                          {['ทั้งหมด', 'ระงับ', 'เสร็จสิ้น', 'กำลังดำเนินการ','ล่าช้า'].map((option) => (
                             <a
                               key={option}
                               href="#"

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ChevronDown, LogOut, Plus, Save, Trash2, Upload, X } from 'lucide-react';
@@ -52,8 +51,6 @@ const CATEGORY_OPTIONS = [
   'การบริหาร',
   'อื่นๆ'
 ];
-
-const PLACEHOLDER_LOGO = 'https://placehold.co/40x40/ffffff/000000?text=LOGO';
 
 const getStatusMeta = (status: string) => STATUS_OPTIONS.find((opt) => opt.status === status) || STATUS_OPTIONS[0];
 
@@ -170,9 +167,21 @@ export default function AddProject() {
   };
 
   const handleSave = async () => {
-    if (!projectInfo.projName || !projectInfo.projCode || !projectInfo.department) {
-      toast.error("กรุณากรอกข้อมูลโครงการให้ครบ");
+    // ตรวจสอบข้อมูลโครงการ
+    if (!projectInfo.projName || !projectInfo.projCode || !projectInfo.department || 
+        !projectInfo.location || !projectInfo.startDate || !projectInfo.endDate || 
+        !projectInfo.objective || !projectInfo.category || !projectInfo.budget || 
+        !projectInfo.responsiblePerson || !projectInfo.contactInfo) {
+      toast.error("กรุณากรอกข้อมูลโครงการให้ครบถ้วน");
       return;
+    }
+
+    // ตรวจสอบกิจกรรม
+    for (const act of activities) {
+      if (!act.description || !act.startDate || !act.endDate) {
+        toast.error("กรุณากรอกข้อมูลกิจกรรมให้ครบถ้วน");
+        return;
+      }
     }
 
     try {
@@ -236,18 +245,18 @@ export default function AddProject() {
       
       <header className="bg-blue-800 text-white p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center">
-          <div className="bg-white p-2 rounded-full mr-3">
+          <div className="bg-white rounded-full mr-3">
             <img 
-                src={PLACEHOLDER_LOGO} 
-                alt="Logo" 
-                className="h-10 w-10 rounded-full" 
+                src="/images/logo.jpg"
+                alt="Logo เทศบาลตำบลปะโค" 
+                className="h-15 w-15 rounded-full" 
                 width={40} 
                 height={40}
             />
           </div>
           <div>
-            <h1 className="text-xl font-bold">การจัดการโครงการ</h1>
-            <p className="text-sm">อำเภอเมืองแมว จังหวัดดาวอังคาร</p>
+            <h1 className="text-xl font-bold">การจัดการโครงการพัฒนาเทศบาลตำบลปะโค</h1>
+            <p className="text-sm">อำเภอเมืองหนองคาย จังหวัดหนองคาย</p>
           </div>
         </div>
       </header>
@@ -306,22 +315,29 @@ export default function AddProject() {
               </Field>
 
               <div className="flex items-center space-x-4">
-                <label className="text-gray-700">สถานะ:</label>
-                <div className={`flex items-center px-4 py-2 rounded-full border cursor-pointer ${statusMeta.color}`} onClick={() => setIsStatusDropdownOpen(v => !v)}>
-                  <div className={`w-3 h-3 rounded-full mr-2 ${statusMeta.dot}`}></div>
-                  {selectedStatus}
-                  <ChevronDown size={16} className={`ml-2 transform transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                <label className="text-gray-700 w-48 font-medium">สถานะ:</label>
+                <div className="flex-1 relative">
+                  <div 
+                    className={`flex items-center justify-between px-4 py-2 rounded-md border cursor-pointer ${statusMeta.color}`} 
+                    onClick={() => setIsStatusDropdownOpen(v => !v)}
+                  >
+                    <div className="flex items-center">
+                      <div className={`w-3 h-3 rounded-full mr-2 ${statusMeta.dot}`}></div>
+                      {selectedStatus}
+                    </div>
+                    <ChevronDown size={16} className={`transform transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                  {isStatusDropdownOpen && (
+                    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                      {STATUS_OPTIONS.map(opt => (
+                        <li key={opt.status} className="px-4 py-2 cursor-pointer text-black hover:bg-gray-100 flex items-center" onClick={() => handleStatusSelect(opt.status)}>
+                          <div className={`w-3 h-3 rounded-full mr-2 ${opt.dot}`}></div>
+                          {opt.status}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                {isStatusDropdownOpen && (
-                  <ul className="absolute mt-10 w-48 bg-white border rounded shadow z-10">
-                    {STATUS_OPTIONS.map(opt => (
-                      <li key={opt.status} className="px-4 py-2 cursor-pointer text-black hover:bg-gray-100 flex items-center" onClick={() => handleStatusSelect(opt.status)}>
-                        <div className={`w-3 h-3 rounded-full mr-2 ${opt.dot}`}></div>
-                        {opt.status}
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
 
               <Field label="หมวดหมู่">
@@ -360,12 +376,7 @@ export default function AddProject() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-800">กิจกรรม</h2>
-                <button onClick={addActivity} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-600">
-                  <Plus size={18} className="mr-1" /> เพิ่มกิจกรรม
-                </button>
-              </div>
+              <h2 className="text-xl font-semibold text-gray-800">กิจกรรม</h2>
               
               <div className="space-y-3">
                 {activities.map(act => (
@@ -410,6 +421,10 @@ export default function AddProject() {
                   </div>
                 ))}
               </div>
+
+              <button onClick={addActivity} className="bg-blue-500 text-white px-4 py-2 rounded-md flex items-center hover:bg-blue-600">
+                <Plus size={18} className="mr-1" /> เพิ่มกิจกรรม
+              </button>
             </div>
 
             <div className="space-y-4">
