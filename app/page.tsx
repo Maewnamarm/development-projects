@@ -470,7 +470,7 @@ export default function HomePage() {
 
                   {/* Filter Options */}
                   <div className="flex items-center text-black">
-                    <span className="font-medium">หมวดหมู่ :</span>
+                    <span className="font-medium">สถานะ :</span>
                   </div>
 
                   <div className="relative">

@@ -78,6 +78,7 @@ export default function TracePage() {
     { status: 'รอดำเนินการ', color: 'bg-white text-black border-gray-500', dot: 'bg-gray-500' },
     { status: 'กำลังดำเนินการ', color: 'bg-white text-black border-gray-500', dot: 'bg-yellow-300' },
     { status: 'เสร็จสิ้น', color: 'bg-white text-black border-gray-500', dot: 'bg-green-500' },
+    { status: 'ล่าช้า', color: 'bg-white text-black border-gray-500', dot: 'bg-red-500' },
   ];
  
   const fetchProjectData = useCallback(async () => {
