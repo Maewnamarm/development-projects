@@ -41,6 +41,14 @@ const safeNumber = (n: unknown): number | null => {
   return isNaN(num) ? null : num;
 };
 
+/**
+ * ดึงนามสกุลไฟล์จากชื่อไฟล์
+ */
+const getFileExtension = (filename: string): string => {
+  const lastDot = filename.lastIndexOf('.');
+  return lastDot !== -1 ? filename.substring(lastDot) : '';
+};
+
 // --- API Handler ---
 
 export async function POST(req: Request) {
@@ -97,16 +105,14 @@ export async function POST(req: Request) {
           contact_info: contactInfo,
         },
       ])
-      .select("id") // เลือกเฉพาะ ID ที่จำเป็นต้องใช้ต่อ
+      .select("id")
       .single();
 
     if (projectError) throw projectError;
-    // Note: Assuming 'id' is present and is a number, based on 'select("id")'
     const projectId = project.id as number; 
 
     // 2) Insert Activities
     if (activities && activities.length > 0) {
-      // Fix 2: ใช้ Type ActivityData ที่กำหนดไว้
       const activityRows = activities.map((a: ActivityData) => ({ 
         project_id: projectId,
         description: a.description,
@@ -123,51 +129,71 @@ export async function POST(req: Request) {
 
     // 3) Upload Documents
     if (documents && documents.length > 0) {
-      // Fix 3: ใช้ Type DocumentRow[] ที่กำหนดไว้
-      const docRows: DocumentRow[] = []; 
+      const docRows: DocumentRow[] = [];
 
       for (const d of documents) {
-        if (!d.file) throw new Error(`เอกสาร ${d.name} ไม่มีไฟล์`);
+        if (!d.file) {
+          console.error(`เอกสาร ${d.name} ไม่มีไฟล์`);
+          continue; // ข้ามไฟล์นี้แทนการ throw error
+        }
       
-        const fileBuffer = Buffer.from(d.file.replace(/^data:.+;base64,/, ''), "base64");
-        
-        const filePath = `project-files/${crypto.randomUUID()}-${d.name}`; 
+        try {
+          const fileBuffer = Buffer.from(d.file.replace(/^data:.+;base64,/, ''), "base64");
+          
+          // ใช้ UUID เป็นชื่อไฟล์หลัก และเก็บนามสกุลไฟล์เดิม
+          const fileExtension = getFileExtension(d.name);
+          const uniqueFileName = `${crypto.randomUUID()}${fileExtension}`;
+          const filePath = `project-files/${uniqueFileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("project-files")
-          .upload(filePath, fileBuffer, {
-            contentType: d.type || "application/octet-stream",
+          const { error: uploadError } = await supabase.storage
+            .from("project-files")
+            .upload(filePath, fileBuffer, {
+              contentType: d.type || "application/octet-stream",
+              upsert: false
+            });
+        
+          if (uploadError) {
+            console.error(`Error uploading file ${d.name}:`, uploadError);
+            throw new Error(`ไม่สามารถอัปโหลดไฟล์ ${d.name}: ${uploadError.message}`);
+          }
+        
+          const { data: publicUrl } = supabase.storage
+            .from("project-files")
+            .getPublicUrl(filePath);
+        
+          docRows.push({
+            project_id: projectId,
+            name: d.name, // เก็บชื่อภาษาไทยไว้ใน database
+            file_url: publicUrl.publicUrl,
+            is_public: d.isPublic || false,
           });
-      
-        if (uploadError) throw uploadError;
-      
-        const { data: publicUrl } = supabase.storage
-          .from("project-files")
-          .getPublicUrl(filePath);
-      
-        docRows.push({
-          project_id: projectId,
-          name: d.name,
-          file_url: publicUrl.publicUrl,
-          is_public: d.isPublic || false,
-        });
+        } catch (fileError) {
+          console.error(`Error processing file ${d.name}:`, fileError);
+          throw new Error(`เกิดข้อผิดพลาดในการประมวลผลไฟล์ ${d.name}`);
+        }
       }
       
-      const { error: docError } = await supabase.from("documents").insert(docRows);
-      if (docError) throw docError;
+      if (docRows.length > 0) {
+        const { error: docError } = await supabase.from("documents").insert(docRows);
+        if (docError) {
+          console.error("Error inserting documents:", docError);
+          throw new Error(`ไม่สามารถบันทึกข้อมูลเอกสารได้: ${docError.message}`);
+        }
+      }
     }
 
     return NextResponse.json(
-      { message: "Project and related data saved successfully" },
+      { message: "Project and related data saved successfully", ok: true },
       { status: 200 }
     );
-  } catch (error) { // Fix 4: error is implicitly 'unknown'
+  } catch (error) {
+    console.error("Error in POST /api/saveProject:", error);
     const errorMessage = error instanceof Error ? 
       error.message : 
       "Internal Server Error: An unknown error occurred.";
       
     return NextResponse.json(
-      { message: errorMessage },
+      { message: errorMessage, ok: false },
       { status: 500 }
     );
   }
