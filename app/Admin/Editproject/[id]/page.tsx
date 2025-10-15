@@ -252,6 +252,70 @@ export default function EditProject() {
         handleProjectChange('category', category); 
         setIsCategoryDropdownOpen(false); 
     };
+   
+    const handleDeleteActivity = async (activityId: number) => {
+        const activity = activities.find(a => a.id === activityId);
+        if (!activity) return;
+
+        // ตรวจสอบว่าเป็นกิจกรรมใหม่ที่ยังไม่ได้บันทึกหรือไม่ (ID เป็นเลขลบ)
+        const isNewActivity = activityId < 0;
+
+        if (isNewActivity) {
+            // ถ้าเป็นกิจกรรมใหม่ที่ยังไม่ได้บันทึกในฐานข้อมูล ให้ลบจาก state เฉยๆ
+            setActivities(prev => prev.filter(a => a.id !== activityId));
+            toast.success("ลบกิจกรรมเรียบร้อย");
+            return;
+        }
+
+        // ถ้าเป็นกิจกรรมที่มีในฐานข้อมูลแล้ว ต้องยืนยันก่อนลบ
+        const confirmed = window.confirm(
+            'คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?\n' +
+            'การลบจะส่งผลถึงข้อมูลในระบบทันที และไม่สามารถย้อนกลับได้'
+        );
+        
+        if (!confirmed) return;
+
+        try {
+            console.log('🗑️ เริ่มลบกิจกรรม ID:', activityId);
+
+            // ลบ status updates ที่เชื่อมกับกิจกรรมนี้ก่อน
+            const { error: statusDeleteError } = await supabase
+                .from('status')
+                .delete()
+                .eq('activity_id', activityId);
+
+            if (statusDeleteError) {
+                console.error('Error deleting status updates:', statusDeleteError);
+                toast.error(`เกิดข้อผิดพลาดในการลบประวัติสถานะ: ${statusDeleteError.message}`);
+                return;
+            }
+
+            console.log('✅ ลบ status updates สำเร็จ');
+
+            // ลบกิจกรรมจากฐานข้อมูล
+            const { error: activityDeleteError } = await supabase
+                .from('activities')
+                .delete()
+                .eq('id', activityId);
+
+            if (activityDeleteError) {
+                console.error('Error deleting activity:', activityDeleteError);
+                toast.error(`ไม่สามารถลบกิจกรรมได้: ${activityDeleteError.message}`);
+                return;
+            }
+
+            console.log('ลบกิจกรรมจากฐานข้อมูลสำเร็จ');
+
+            // ลบกิจกรรมจาก state
+            setActivities(prev => prev.filter(a => a.id !== activityId));
+            toast.success('ลบกิจกรรมเรียบร้อยแล้ว');
+
+        } catch (error) {
+            console.error('Unexpected error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดที่ไม่คาดคิด';
+            toast.error(errorMessage);
+        }
+    };
 
     const handleSave = async () => {
         if (!id) {
@@ -259,7 +323,6 @@ export default function EditProject() {
             return;
         }
 
-        // ตรวจสอบข้อมูลโครงการ
         if (!projectInfo.projName || !projectInfo.projCode || !projectInfo.department || 
             !projectInfo.location || !projectInfo.startDate || !projectInfo.endDate || 
             !projectInfo.objective || !projectInfo.category || !projectInfo.budget || 
@@ -268,7 +331,6 @@ export default function EditProject() {
             return;
         }
 
-        // ตรวจสอบกิจกรรม
         for (const act of activities) {
             if (!act.description || !act.startDate || !act.endDate) {
                 toast.error("กรุณากรอกข้อมูลกิจกรรมให้ครบถ้วน");
@@ -504,7 +566,7 @@ export default function EditProject() {
                                         <div className="flex justify-between items-start mb-3">
                                             <label className="text-gray-700 font-medium">รายละเอียดกิจกรรม</label>
                                             <button 
-                                                onClick={() => setActivities(prev => prev.filter(a => a.id !== act.id))} 
+                                                onClick={() => handleDeleteActivity(act.id)}
                                                 className="text-red-600 hover:text-red-900 flex items-center"
                                                 title="ลบกิจกรรม"
                                             >

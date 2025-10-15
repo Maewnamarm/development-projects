@@ -128,7 +128,8 @@ export default function AddProject() {
           reader.onload = () => {
             const result = reader.result;
             if (!result) return reject("ไฟล์ว่าง");
-            resolve((result as string).split(",")[1]); 
+            // เก็บทั้ง data URL รวม prefix ด้วย
+            resolve(result as string);
           };
           reader.onerror = (err) => reject(err);
         });
@@ -140,7 +141,7 @@ export default function AddProject() {
         {
           id: nextId(prev),
           name: newDocument.name,
-          file: base64File,
+          file: base64File, // เก็บทั้ง data URL
           type: file.type,
           isPublic: false,
         } as DocumentItem

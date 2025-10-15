@@ -45,8 +45,6 @@ development-projects-master
 │  │  │  ├─ page.tsx
 │  │  │  └─ [id]
 │  │  │     └─ page.tsx
-│  │  ├─ Login
-│  │  │  └─ page.tsx
 │  │  ├─ page.tsx
 │  │  ├─ Site
 │  │  │  └─ page.tsx
@@ -57,9 +55,8 @@ development-projects-master
 │  │     └─ [id]
 │  │        └─ page.tsx
 │  ├─ Alluser
-│  │  ├─ Home
-│  │  │  └─ page.tsx
-│  │  └─ page.tsx
+│  │  └─ Login
+│  │     └─ page.tsx
 │  ├─ api
 │  │  ├─ comment
 │  │  │  └─ route.ts
@@ -92,7 +89,8 @@ development-projects-master
 │  ├─ file.svg
 │  ├─ globe.svg
 │  ├─ images
-│  │  └─ image1.jpg
+│  │  ├─ image1.jpg
+│  │  └─ logo.jpg
 │  ├─ next.svg
 │  ├─ vercel.svg
 │  └─ window.svg
